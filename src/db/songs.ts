@@ -1,8 +1,8 @@
-import { db } from './client';
+import { getDb } from './client';
 import { SongRow, SongWithStats, TabRow } from '../types';
 
 export function getAllSongs(): SongWithStats[] {
-  const songs = db.getAllSync<SongRow & { best_score: number | null; latest_score: number | null; score_count: number }>(`
+  const songs = getDb().getAllSync<SongRow & { best_score: number | null; latest_score: number | null; score_count: number }>(`
     SELECT
       s.*,
       MAX(sc.score)  AS best_score,
@@ -15,7 +15,7 @@ export function getAllSongs(): SongWithStats[] {
   `);
   return songs.map((song) => ({
     ...song,
-    tabs: db.getAllSync<TabRow>(
+    tabs: getDb().getAllSync<TabRow>(
       'SELECT t.* FROM tabs t JOIN song_tabs st ON st.tab_id = t.id WHERE st.song_id = ?',
       [song.id]
     ),
@@ -23,7 +23,7 @@ export function getAllSongs(): SongWithStats[] {
 }
 
 export function getSongsByTab(tabId: number): SongWithStats[] {
-  const songs = db.getAllSync<SongRow & { best_score: number | null; latest_score: number | null; score_count: number }>(`
+  const songs = getDb().getAllSync<SongRow & { best_score: number | null; latest_score: number | null; score_count: number }>(`
     SELECT
       s.*,
       MAX(sc.score)  AS best_score,
@@ -38,7 +38,7 @@ export function getSongsByTab(tabId: number): SongWithStats[] {
   `, [tabId]);
   return songs.map((song) => ({
     ...song,
-    tabs: db.getAllSync<TabRow>(
+    tabs: getDb().getAllSync<TabRow>(
       'SELECT t.* FROM tabs t JOIN song_tabs st ON st.tab_id = t.id WHERE st.song_id = ?',
       [song.id]
     ),
@@ -46,7 +46,7 @@ export function getSongsByTab(tabId: number): SongWithStats[] {
 }
 
 export function getSongById(id: number): SongWithStats | null {
-  const song = db.getFirstSync<SongRow & { best_score: number | null; latest_score: number | null; score_count: number }>(`
+  const song = getDb().getFirstSync<SongRow & { best_score: number | null; latest_score: number | null; score_count: number }>(`
     SELECT
       s.*,
       MAX(sc.score)  AS best_score,
@@ -60,7 +60,7 @@ export function getSongById(id: number): SongWithStats | null {
   if (!song) return null;
   return {
     ...song,
-    tabs: db.getAllSync<TabRow>(
+    tabs: getDb().getAllSync<TabRow>(
       'SELECT t.* FROM tabs t JOIN song_tabs st ON st.tab_id = t.id WHERE st.song_id = ?',
       [id]
     ),
@@ -68,7 +68,7 @@ export function getSongById(id: number): SongWithStats | null {
 }
 
 export function insertSong(title: string, artist: string, keyOffset: number | null): number {
-  const result = db.runSync(
+  const result = getDb().runSync(
     'INSERT INTO songs (title, artist, key_offset, created_at) VALUES (?, ?, ?, ?)',
     [title, artist, keyOffset, new Date().toISOString()]
   );
@@ -76,12 +76,12 @@ export function insertSong(title: string, artist: string, keyOffset: number | nu
 }
 
 export function updateSong(id: number, title: string, artist: string, keyOffset: number | null): void {
-  db.runSync(
+  getDb().runSync(
     'UPDATE songs SET title = ?, artist = ?, key_offset = ? WHERE id = ?',
     [title, artist, keyOffset, id]
   );
 }
 
 export function deleteSong(id: number): void {
-  db.runSync('DELETE FROM songs WHERE id = ?', [id]);
+  getDb().runSync('DELETE FROM songs WHERE id = ?', [id]);
 }
