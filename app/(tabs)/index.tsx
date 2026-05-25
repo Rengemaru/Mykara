@@ -26,6 +26,9 @@ import { SongWithStats, TabRow } from '../../src/types';
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { tabsWithAll, reload: reloadTabs } = useTabs();
+  const [activeTabId, setActiveTabId] = useState<number>(ALL_TAB.id);
+  const [query, setQuery] = useState('');
+  const { songs, loading, error, reload } = useSongs(activeTabId);
 
   useFocusEffect(
     useCallback(() => {
@@ -33,9 +36,6 @@ export default function HomeScreen() {
       reload();
     }, [reloadTabs, reload])
   );
-  const [activeTabId, setActiveTabId] = useState<number>(ALL_TAB.id);
-  const [query, setQuery] = useState('');
-  const { songs, loading, error, reload } = useSongs(activeTabId);
   const [scoringSong, setScoringsSong] = useState<SongWithStats | null>(null);
   const swipeRefs = useRef<Map<number, Swipeable | null>>(new Map());
 
