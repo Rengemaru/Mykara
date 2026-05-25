@@ -1,6 +1,8 @@
+import { Platform } from 'react-native';
 import { getDb } from './client';
 
 export function seedIfEmpty(): void {
+  if (Platform.OS === 'web') return;
   const db = getDb();
 
   const songCount = db.getFirstSync<{ count: number }>('SELECT COUNT(*) as count FROM songs');

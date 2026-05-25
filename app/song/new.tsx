@@ -3,12 +3,14 @@ import { useEffect, useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -29,6 +31,8 @@ export default function SongFormScreen() {
   const [artist, setArtist] = useState('');
   const [keyOffset, setKeyOffset] = useState<number | null>(null);
   const [selectedTabIds, setSelectedTabIds] = useState<number[]>([]);
+  const [newTabModalVisible, setNewTabModalVisible] = useState(false);
+  const [newTabName, setNewTabName] = useState('');
 
   useEffect(() => {
     if (!isEdit) return;
@@ -50,23 +54,22 @@ export default function SongFormScreen() {
     );
   }
 
-  async function handleAddNewTab() {
-    Alert.prompt(
-      '新しいタブを作成',
-      'タブ名を入力してください',
-      (name) => {
-        if (!name?.trim()) return;
-        try {
-          const newId = insertTab(name.trim());
-          reloadTabs();
-          setSelectedTabIds((prev) => [...prev, newId]);
-        } catch (e) {
-          console.error(e);
-          Alert.alert('エラー', 'タブの作成に失敗しました');
-        }
-      },
-      'plain-text'
-    );
+  function handleAddNewTab() {
+    setNewTabName('');
+    setNewTabModalVisible(true);
+  }
+
+  function handleConfirmNewTab() {
+    if (!newTabName.trim()) return;
+    try {
+      const newId = insertTab(newTabName.trim());
+      reloadTabs();
+      setSelectedTabIds((prev) => [...prev, newId]);
+    } catch (e) {
+      console.error(e);
+      Alert.alert('エラー', 'タブの作成に失敗しました');
+    }
+    setNewTabModalVisible(false);
   }
 
   function handleSave() {
@@ -169,6 +172,34 @@ export default function SongFormScreen() {
             <KeyStepper value={keyOffset} onChange={setKeyOffset} />
           </View>
         </ScrollView>
+
+        {/* 新規タブ作成モーダル */}
+        <Modal visible={newTabModalVisible} transparent animationType="fade" onRequestClose={() => setNewTabModalVisible(false)}>
+          <TouchableWithoutFeedback onPress={() => setNewTabModalVisible(false)}>
+            <View style={styles.modalOverlay} />
+          </TouchableWithoutFeedback>
+          <View style={styles.modalBox}>
+            <Text style={styles.modalTitle}>新しいタブを作成</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={newTabName}
+              onChangeText={setNewTabName}
+              placeholder="タブ名を入力"
+              placeholderTextColor={colors.text3}
+              autoFocus
+              returnKeyType="done"
+              onSubmitEditing={handleConfirmNewTab}
+            />
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.modalCancel} onPress={() => setNewTabModalVisible(false)}>
+                <Text style={styles.modalCancelText}>キャンセル</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalConfirm} onPress={handleConfirmNewTab}>
+                <Text style={styles.modalConfirmText}>作成</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
 
         {/* 保存ボタン */}
         <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
@@ -290,6 +321,64 @@ const styles = StyleSheet.create({
   },
   saveBtnText: {
     fontSize: 14,
+    fontWeight: '700',
+    color: colors.white,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+  },
+  modalBox: {
+    position: 'absolute',
+    top: '40%',
+    left: 32,
+    right: 32,
+    backgroundColor: colors.white,
+    borderRadius: 16,
+    padding: 20,
+    gap: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 24,
+    elevation: 8,
+  },
+  modalTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  modalInput: {
+    backgroundColor: colors.surface,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 13,
+    color: colors.text,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 10,
+  },
+  modalCancel: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  modalCancelText: {
+    fontSize: 13,
+    color: colors.text2,
+  },
+  modalConfirm: {
+    backgroundColor: colors.accent,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  modalConfirmText: {
+    fontSize: 13,
     fontWeight: '700',
     color: colors.white,
   },
