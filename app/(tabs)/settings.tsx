@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../src/constants/colors';
+import { fonts } from '../../src/constants/fonts';
 import { getDb } from '../../src/db/client';
 
 export default function SettingsScreen() {
@@ -120,8 +121,8 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   title: {
+    fontFamily: fonts.jakartaExtraBold,
     fontSize: 20,
-    fontWeight: '800',
     letterSpacing: -0.2,
     color: colors.text,
   },

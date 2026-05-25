@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../constants/colors';
+import { fonts } from '../constants/fonts';
 import { insertScore, updateScore } from '../db/scores';
 import { ScoreRow, SongWithStats } from '../types';
 
@@ -202,8 +203,8 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
   },
   scoreNum: {
+    fontFamily: fonts.jakartaExtraBold,
     fontSize: 28,
-    fontWeight: '800',
     color: colors.accent,
     letterSpacing: -0.4,
   },

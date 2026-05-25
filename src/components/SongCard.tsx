@@ -1,5 +1,6 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { colors } from '../constants/colors';
+import { fonts } from '../constants/fonts';
 import { SongWithStats } from '../types';
 
 interface Props {
@@ -129,9 +130,8 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(245, 158, 11, 0.2)',
   },
   keyBadgeText: {
-    fontFamily: 'DM Mono',
+    fontFamily: fonts.monoMedium,
     fontSize: 11,
-    fontWeight: '500',
     color: colors.text2,
   },
   keyBadgeTextPositive: {
@@ -141,9 +141,8 @@ const styles = StyleSheet.create({
     color: colors.yellow,
   },
   score: {
-    fontFamily: 'DM Mono',
+    fontFamily: fonts.monoMedium,
     fontSize: 14,
-    fontWeight: '500',
     color: colors.accent,
   },
   recordBtn: {

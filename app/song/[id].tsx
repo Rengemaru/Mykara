@@ -9,9 +9,11 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Swipeable } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../src/constants/colors';
+import { fonts } from '../../src/constants/fonts';
 import { deleteSong } from '../../src/db/songs';
 import { deleteScore } from '../../src/db/scores';
 import { useSongDetail } from '../../src/hooks/useSongDetail';
@@ -122,7 +124,12 @@ export default function SongDetailScreen() {
         ListHeaderComponent={
           <View style={styles.listHeader}>
             {/* 最高スコアカード */}
-            <View style={styles.bestCard}>
+            <LinearGradient
+              colors={['#ede9fe', '#f5f3ff']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.bestCard}
+            >
               <View>
                 <Text style={styles.bestLabel}>最高スコア</Text>
                 <Text style={styles.bestValue}>
@@ -138,7 +145,7 @@ export default function SongDetailScreen() {
                 <Text style={styles.bestLabel}>記録回数</Text>
                 <Text style={styles.countValue}>{song.score_count}回</Text>
               </View>
-            </View>
+            </LinearGradient>
 
             {/* グラフ（スコアが2件以上あるとき表示） */}
             {scores.length >= 2 && (
@@ -289,7 +296,6 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   bestCard: {
-    backgroundColor: '#ede9fe',
     borderWidth: 1.5,
     borderColor: 'rgba(91, 76, 245, 0.15)',
     borderRadius: 16,
@@ -305,18 +311,18 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   bestValue: {
+    fontFamily: fonts.jakartaExtraBold,
     fontSize: 34,
-    fontWeight: '800',
     color: colors.accent,
-    lineHeight: 36,
+    lineHeight: 40,
   },
   bestDiff: {
     fontSize: 11,
     marginTop: 3,
   },
   countValue: {
+    fontFamily: fonts.monoMedium,
     fontSize: 22,
-    fontWeight: '500',
     color: colors.text,
     textAlign: 'right',
   },
@@ -338,14 +344,15 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   historyDate: {
+    fontFamily: fonts.monoRegular,
     fontSize: 11,
     color: colors.text3,
-    width: 60,
+    width: 52,
   },
   historyScore: {
+    fontFamily: fonts.monoMedium,
     flex: 1,
     fontSize: 14,
-    fontWeight: '500',
     color: colors.accent,
   },
   swipeActions: {

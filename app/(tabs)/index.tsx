@@ -17,6 +17,7 @@ import { EmptyState } from '../../src/components/EmptyState';
 import { ScoreBottomSheet } from '../../src/components/ScoreBottomSheet';
 import { SongCard } from '../../src/components/SongCard';
 import { colors } from '../../src/constants/colors';
+import { fonts } from '../../src/constants/fonts';
 import { deleteSong } from '../../src/db/songs';
 import { useSongs, ALL_TAB } from '../../src/hooks/useSongs';
 import { useTabs } from '../../src/hooks/useTabs';
@@ -212,12 +213,13 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
   },
   appTitle: {
+    fontFamily: fonts.jakartaExtraBold,
     fontSize: 22,
-    fontWeight: '800',
     letterSpacing: -0.4,
     color: colors.text,
   },
   appTitleAccent: {
+    fontFamily: fonts.jakartaExtraBold,
     color: colors.accent,
   },
   addBtn: {
@@ -245,6 +247,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingBottom: 10,
     gap: 6,
+    alignItems: 'center',
   },
   tabPill: {
     paddingHorizontal: 12,
