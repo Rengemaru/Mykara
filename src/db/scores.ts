@@ -1,0 +1,28 @@
+import { db } from './client';
+import { ScoreRow } from '../types';
+
+export function getScoresBySong(songId: number): ScoreRow[] {
+  return db.getAllSync<ScoreRow>(
+    'SELECT * FROM scores WHERE song_id = ? ORDER BY scored_at DESC',
+    [songId]
+  );
+}
+
+export function insertScore(songId: number, score: number, scoredAt: string): number {
+  const result = db.runSync(
+    'INSERT INTO scores (song_id, score, scored_at) VALUES (?, ?, ?)',
+    [songId, score, scoredAt]
+  );
+  return result.lastInsertRowId;
+}
+
+export function updateScore(id: number, score: number, scoredAt: string): void {
+  db.runSync(
+    'UPDATE scores SET score = ?, scored_at = ? WHERE id = ?',
+    [score, scoredAt, id]
+  );
+}
+
+export function deleteScore(id: number): void {
+  db.runSync('DELETE FROM scores WHERE id = ?', [id]);
+}

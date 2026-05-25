@@ -1,0 +1,30 @@
+// ---- DB から取得したままの形（snake_case） ----
+export interface SongRow {
+  id: number;
+  title: string;
+  artist: string;
+  key_offset: number | null;
+  artwork_url: string | null;
+  created_at: string;
+}
+
+export interface TabRow {
+  id: number;
+  name: string;
+  sort_order: number;
+}
+
+export interface ScoreRow {
+  id: number;
+  song_id: number;
+  score: number;
+  scored_at: string;
+}
+
+// ---- アプリ内で使う集計済みの形 ----
+export interface SongWithStats extends SongRow {
+  best_score: number | null;
+  latest_score: number | null;
+  score_count: number;
+  tabs: TabRow[];
+}
