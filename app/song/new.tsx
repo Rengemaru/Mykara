@@ -235,10 +235,11 @@ export default function SongFormScreen() {
 
         {/* 新規タブ作成モーダル */}
         <Modal visible={newTabModalVisible} transparent animationType="fade" statusBarTranslucent onRequestClose={() => setNewTabModalVisible(false)}>
-          <TouchableWithoutFeedback onPress={() => setNewTabModalVisible(false)}>
-            <View style={styles.modalOverlay} />
-          </TouchableWithoutFeedback>
-          <View style={styles.modalBox}>
+          <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+            <TouchableWithoutFeedback onPress={() => setNewTabModalVisible(false)}>
+              <View style={styles.modalOverlay} />
+            </TouchableWithoutFeedback>
+            <View style={styles.modalBox}>
             <Text style={styles.modalTitle}>新しいタブを作成</Text>
             <TextInput
               style={styles.modalInput}
@@ -259,6 +260,7 @@ export default function SongFormScreen() {
               </TouchableOpacity>
             </View>
           </View>
+          </KeyboardAvoidingView>
         </Modal>
 
         {/* 保存ボタン */}
@@ -473,14 +475,13 @@ const styles = StyleSheet.create({
     color: colors.white,
   },
   modalOverlay: {
-    flex: 1,
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.4)',
   },
   modalBox: {
-    position: 'absolute',
-    top: '40%',
-    left: 32,
-    right: 32,
+    marginHorizontal: 32,
+    marginBottom: 'auto',
+    marginTop: 'auto',
     backgroundColor: colors.white,
     borderRadius: 16,
     padding: 20,
