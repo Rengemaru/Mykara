@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { EmptyState } from '../../src/components/EmptyState';
 import { ScoreBottomSheet } from '../../src/components/ScoreBottomSheet';
 import { SongCard } from '../../src/components/SongCard';
 import { colors } from '../../src/constants/colors';
@@ -120,21 +121,21 @@ export default function HomeScreen() {
       {/* 曲一覧 */}
       {error ? (
         <View style={styles.center}>
-          <Text style={styles.errorText}>{error}</Text>
+          <EmptyState emoji="⚠️" title="データを取得できませんでした" subtitle={error} />
         </View>
       ) : loading ? (
         <View style={styles.center}>
-          <Text style={styles.loadingText}>読み込み中...</Text>
+          <EmptyState emoji="⏳" title="読み込み中..." />
         </View>
       ) : filtered.length === 0 ? (
         <View style={styles.center}>
-          <Text style={styles.emptyText}>まだ曲がありません</Text>
-          <TouchableOpacity
-            style={styles.emptyAddBtn}
-            onPress={() => router.push('/song/new')}
-          >
-            <Text style={styles.emptyAddBtnText}>＋ 最初の曲を追加する</Text>
-          </TouchableOpacity>
+          <EmptyState
+            emoji="🎵"
+            title={query ? '検索結果がありません' : 'まだ曲がありません'}
+            subtitle={query ? '別のキーワードで試してみてください' : 'カラオケで歌った曲を追加しましょう'}
+            actionLabel={query ? undefined : '＋ 最初の曲を追加する'}
+            onAction={query ? undefined : () => router.push('/song/new')}
+          />
         </View>
       ) : (
         <FlatList
@@ -296,29 +297,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 12,
-  },
-  emptyText: {
-    fontSize: 15,
-    color: colors.text2,
-  },
-  emptyAddBtn: {
-    backgroundColor: colors.accent,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 12,
-  },
-  emptyAddBtnText: {
-    color: colors.white,
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  loadingText: {
-    fontSize: 14,
-    color: colors.text3,
-  },
-  errorText: {
-    fontSize: 14,
-    color: colors.red,
   },
   swipeActions: {
     flexDirection: 'row',

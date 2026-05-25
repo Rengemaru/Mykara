@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../src/constants/colors';
 import { insertTab, updateTab, deleteTab, updateTabOrder } from '../src/db/tabs';
 import { useTabs } from '../src/hooks/useTabs';
+import { EmptyState } from '../src/components/EmptyState';
 import { TabRow } from '../src/types';
 
 export default function TabsScreen() {
@@ -116,9 +117,11 @@ export default function TabsScreen() {
 
         <View style={styles.group}>
           {tabs.length === 0 ? (
-            <View style={styles.emptyRow}>
-              <Text style={styles.emptyText}>タブがありません</Text>
-            </View>
+            <EmptyState
+              emoji="🗂"
+              title="タブがありません"
+              subtitle="「＋ タブを追加」からカテゴリを作成しましょう"
+            />
           ) : (
             tabs.map((tab, index) => (
               <View
@@ -320,14 +323,6 @@ const styles = StyleSheet.create({
   },
   deleteBtnText: {
     fontSize: 13,
-  },
-  emptyRow: {
-    paddingVertical: 20,
-    alignItems: 'center',
-  },
-  emptyText: {
-    fontSize: 13,
-    color: colors.text3,
   },
   addBtn: {
     backgroundColor: colors.white,

@@ -18,6 +18,7 @@ import { useSongDetail } from '../../src/hooks/useSongDetail';
 import { ScoreRow } from '../../src/types';
 import { ScoreBottomSheet } from '../../src/components/ScoreBottomSheet';
 import { ScoreChart } from '../../src/components/ScoreChart';
+import { EmptyState } from '../../src/components/EmptyState';
 
 export default function SongDetailScreen() {
   const insets = useSafeAreaInsets();
@@ -73,7 +74,7 @@ export default function SongDetailScreen() {
   if (loading) {
     return (
       <View style={[styles.center, { paddingTop: insets.top }]}>
-        <Text style={styles.loadingText}>読み込み中...</Text>
+        <EmptyState emoji="⏳" title="読み込み中..." />
       </View>
     );
   }
@@ -81,7 +82,13 @@ export default function SongDetailScreen() {
   if (error || !song) {
     return (
       <View style={[styles.center, { paddingTop: insets.top }]}>
-        <Text style={styles.errorText}>{error ?? '曲が見つかりません'}</Text>
+        <EmptyState
+          emoji="⚠️"
+          title="データを取得できませんでした"
+          subtitle={error ?? '曲が見つかりません'}
+          actionLabel="戻る"
+          onAction={() => router.back()}
+        />
       </View>
     );
   }
@@ -148,9 +155,11 @@ export default function SongDetailScreen() {
           </View>
         }
         ListEmptyComponent={
-          <View style={styles.emptyHistory}>
-            <Text style={styles.emptyText}>まだスコアが記録されていません</Text>
-          </View>
+          <EmptyState
+            emoji="🎤"
+            title="まだスコアが記録されていません"
+            subtitle="「点数を記録する」から最初のスコアを追加しましょう"
+          />
         }
         renderItem={({ item }) => (
           <HistoryRow
@@ -364,14 +373,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textAlign: 'center',
   },
-  emptyHistory: {
-    alignItems: 'center',
-    paddingVertical: 24,
-  },
-  emptyText: {
-    fontSize: 13,
-    color: colors.text3,
-  },
   recordBtnWrap: {
     position: 'absolute',
     left: 18,
@@ -395,13 +396,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: colors.white,
-  },
-  loadingText: {
-    fontSize: 14,
-    color: colors.text3,
-  },
-  errorText: {
-    fontSize: 14,
-    color: colors.red,
   },
 });
