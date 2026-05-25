@@ -33,6 +33,9 @@ yarn-error.*
 # local env files
 .env*.local
 
+# Google Play サービスアカウントキー（秘密鍵のため必ずignore）
+google-services-key.json
+
 # typescript
 *.tsbuildinfo
 
