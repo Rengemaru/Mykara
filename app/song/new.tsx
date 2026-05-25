@@ -20,6 +20,7 @@ import { insertSong, updateSong, getSongById } from '../../src/db/songs';
 import { insertTab } from '../../src/db/tabs';
 import { syncTabs } from '../../src/db/songTabs';
 import { useTabs } from '../../src/hooks/useTabs';
+import { MOCK_SONGS } from '../../src/db/mockData';
 
 export default function SongFormScreen() {
   const insets = useSafeAreaInsets();
@@ -37,7 +38,9 @@ export default function SongFormScreen() {
   useEffect(() => {
     if (!isEdit) return;
     try {
-      const song = getSongById(Number(songId));
+      const song = Platform.OS === 'web'
+        ? MOCK_SONGS.find(s => s.id === Number(songId)) ?? null
+        : getSongById(Number(songId));
       if (!song) return;
       setTitle(song.title);
       setArtist(song.artist);
@@ -61,6 +64,7 @@ export default function SongFormScreen() {
 
   function handleConfirmNewTab() {
     if (!newTabName.trim()) return;
+    if (Platform.OS === 'web') { setNewTabModalVisible(false); return; }
     try {
       const newId = insertTab(newTabName.trim());
       reloadTabs();
@@ -77,6 +81,7 @@ export default function SongFormScreen() {
       Alert.alert('入力エラー', '曲名を入力してください');
       return;
     }
+    if (Platform.OS === 'web') { router.back(); return; }
     try {
       if (isEdit) {
         updateSong(Number(songId), title.trim(), artist.trim(), keyOffset);

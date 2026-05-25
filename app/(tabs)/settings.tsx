@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../src/constants/colors';
 import { fonts } from '../../src/constants/fonts';
@@ -18,6 +18,10 @@ export default function SettingsScreen() {
           text: '削除する',
           style: 'destructive',
           onPress: () => {
+            if (Platform.OS === 'web') {
+              Alert.alert('完了', 'すべてのデータを削除しました');
+              return;
+            }
             try {
               const db = getDb();
               db.execSync('DELETE FROM scores;');

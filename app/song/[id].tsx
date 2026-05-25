@@ -61,6 +61,7 @@ export default function SongDetailScreen() {
         text: '削除',
         style: 'destructive',
         onPress: () => {
+          if (Platform.OS === 'web') { router.back(); return; }
           try {
             deleteSong(songId);
             router.back();
