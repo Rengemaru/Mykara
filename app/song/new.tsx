@@ -65,13 +65,11 @@ export default function SongFormScreen() {
       setArtist(song.artist);
       setKeyOffset(song.key_offset);
       setArtworkUrl(song.artwork_url);
-      setSelectedTabIds(song.tabs?.map((t) => t.id) ?? []);
-      resumeTitleSearch();
-      resumeArtistSearch();
+      setSelectedTabIds(song.tabs.map((t) => t.id));
     } catch (e) {
       console.error(e);
     }
-  }, [songId, isEdit, resumeTitleSearch, resumeArtistSearch]);
+  }, [songId, isEdit]);
 
   function handleSelectSuggestion(item: MusicSuggestion) {
     setTitle(item.trackName);
