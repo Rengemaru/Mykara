@@ -98,7 +98,15 @@ export function deleteSong(id: number): void {
 }
 
 export function updateSongOrder(orderedIds: number[]): void {
-  orderedIds.forEach((id, index) => {
-    getDb().runSync('UPDATE songs SET sort_order = ? WHERE id = ?', [index, id]);
-  });
+  const db = getDb();
+  db.execSync('BEGIN TRANSACTION');
+  try {
+    orderedIds.forEach((id, index) => {
+      db.runSync('UPDATE songs SET sort_order = ? WHERE id = ?', [index, id]);
+    });
+    db.execSync('COMMIT');
+  } catch (e) {
+    db.execSync('ROLLBACK');
+    throw e;
+  }
 }
