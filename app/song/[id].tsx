@@ -3,14 +3,17 @@ import { useState } from 'react';
 import {
   Alert,
   FlatList,
+  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { Swipeable } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../src/constants/colors';
 import { deleteSong } from '../../src/db/songs';
+import { deleteScore } from '../../src/db/scores';
 import { useSongDetail } from '../../src/hooks/useSongDetail';
 import { ScoreRow } from '../../src/types';
 import { ScoreBottomSheet } from '../../src/components/ScoreBottomSheet';
@@ -23,6 +26,30 @@ export default function SongDetailScreen() {
   const { song, scores, loading, error, reload } = useSongDetail(songId);
   const [sheetVisible, setSheetVisible] = useState(false);
   const [editingScore, setEditingScore] = useState<ScoreRow | null>(null);
+
+  function handleDeleteScore(score: ScoreRow) {
+    Alert.alert(
+      'スコアを削除',
+      `${score.scored_at}  ${score.score.toFixed(1)}点\nこの記録を削除しますか？`,
+      [
+        { text: 'キャンセル', style: 'cancel' },
+        {
+          text: '削除する',
+          style: 'destructive',
+          onPress: () => {
+            if (Platform.OS === 'web') return;
+            try {
+              deleteScore(score.id);
+              reload();
+            } catch (e) {
+              console.error(e);
+              Alert.alert('エラー', '削除に失敗しました');
+            }
+          },
+        },
+      ]
+    );
+  }
 
   function handleDeleteSong() {
     Alert.alert('曲を削除', `「${song?.title}」を削除しますか？\nスコア履歴もすべて削除されます。`, [
@@ -132,6 +159,7 @@ export default function SongDetailScreen() {
               setEditingScore(item);
               setSheetVisible(true);
             }}
+            onDelete={() => handleDeleteScore(item)}
           />
         )}
       />
@@ -164,15 +192,40 @@ export default function SongDetailScreen() {
   );
 }
 
-function HistoryRow({ score, onEdit }: { score: ScoreRow; onEdit: () => void }) {
+function HistoryRow({
+  score,
+  onEdit,
+  onDelete,
+}: {
+  score: ScoreRow;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
   return (
-    <View style={styles.historyRow}>
-      <Text style={styles.historyDate}>{score.scored_at}</Text>
-      <Text style={styles.historyScore}>{score.score.toFixed(1)}</Text>
-      <TouchableOpacity style={styles.historyEditBtn} onPress={onEdit}>
-        <Text style={styles.historyEditBtnText}>✏️</Text>
-      </TouchableOpacity>
-    </View>
+    <Swipeable
+      overshootRight={false}
+      renderRightActions={() => (
+        <View style={styles.swipeActions}>
+          <TouchableOpacity
+            style={[styles.swipeBtn, styles.swipeEditBtn]}
+            onPress={onEdit}
+          >
+            <Text style={styles.swipeBtnText}>✏️{'\n'}編集</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.swipeBtn, styles.swipeDeleteBtn]}
+            onPress={onDelete}
+          >
+            <Text style={styles.swipeBtnText}>🗑{'\n'}削除</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    >
+      <View style={styles.historyRow}>
+        <Text style={styles.historyDate}>{score.scored_at}</Text>
+        <Text style={styles.historyScore}>{score.score.toFixed(1)}</Text>
+      </View>
+    </Swipeable>
   );
 }
 
@@ -286,11 +339,30 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: colors.accent,
   },
-  historyEditBtn: {
-    padding: 4,
+  swipeActions: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    paddingLeft: 8,
+    gap: 6,
   },
-  historyEditBtnText: {
-    fontSize: 14,
+  swipeBtn: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 10,
+    minWidth: 56,
+    paddingHorizontal: 8,
+  },
+  swipeEditBtn: {
+    backgroundColor: colors.accent,
+  },
+  swipeDeleteBtn: {
+    backgroundColor: colors.red,
+  },
+  swipeBtnText: {
+    color: colors.white,
+    fontSize: 10,
+    fontWeight: '700',
+    textAlign: 'center',
   },
   emptyHistory: {
     alignItems: 'center',
