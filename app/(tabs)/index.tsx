@@ -146,7 +146,7 @@ export default function HomeScreen() {
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => (
             <Swipeable
-              ref={(ref) => swipeRefs.current.set(item.id, ref)}
+              ref={(ref) => { swipeRefs.current.set(item.id, ref); }}
               onSwipeableWillOpen={() => closeOtherSwipeables(item.id)}
               overshootRight={false}
               renderRightActions={() => (

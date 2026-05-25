@@ -33,8 +33,8 @@ export function ScoreChart({ scores }: Props) {
         curved
         dataPointsColor={colors.accent}
         dataPointsRadius={4}
-        maxValue={maxVal}
-        minValue={minVal}
+        maxValue={maxVal - minVal}
+        yAxisOffset={minVal}
         noOfSections={3}
         hideYAxisText
         rulesColor={colors.border}

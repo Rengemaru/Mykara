@@ -1,7 +1,7 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { Platform, StyleSheet, View } from 'react-native';
 import { Stack } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { StyleSheet, View } from 'react-native';
 import { useFonts } from 'expo-font';
 import {
   PlusJakartaSans_700Bold,
@@ -22,12 +22,17 @@ export default function RootLayout() {
     DMMono_500Medium,
   });
 
+  // Web uses mock data — no DB init needed. Native must finish init before rendering.
+  const [dbReady, setDbReady] = useState(Platform.OS === 'web');
+
   useEffect(() => {
+    if (Platform.OS === 'web') return;
     initDatabase();
     seedIfEmpty();
+    setDbReady(true);
   }, []);
 
-  if (!fontsLoaded) {
+  if (!fontsLoaded || !dbReady) {
     return <View style={styles.root} />;
   }
 
