@@ -234,7 +234,7 @@ export default function SongFormScreen() {
         </ScrollView>
 
         {/* 新規タブ作成モーダル */}
-        <Modal visible={newTabModalVisible} transparent animationType="fade" onRequestClose={() => setNewTabModalVisible(false)}>
+        <Modal visible={newTabModalVisible} transparent animationType="fade" statusBarTranslucent onRequestClose={() => setNewTabModalVisible(false)}>
           <TouchableWithoutFeedback onPress={() => setNewTabModalVisible(false)}>
             <View style={styles.modalOverlay} />
           </TouchableWithoutFeedback>
