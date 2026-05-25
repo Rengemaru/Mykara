@@ -96,9 +96,8 @@ export default function SongDetailScreen() {
     );
   }
 
-  const prevScore = scores[1]?.score ?? null;
-  const diff = song.best_score != null && prevScore != null
-    ? song.best_score - prevScore
+  const diff = scores.length >= 2
+    ? scores[0].score - scores[1].score
     : null;
 
   return (

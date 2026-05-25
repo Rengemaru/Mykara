@@ -30,7 +30,8 @@ export default function HomeScreen() {
   useFocusEffect(
     useCallback(() => {
       reloadTabs();
-    }, [reloadTabs])
+      reload();
+    }, [reloadTabs, reload])
   );
   const [activeTabId, setActiveTabId] = useState<number>(ALL_TAB.id);
   const [query, setQuery] = useState('');
