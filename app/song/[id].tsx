@@ -14,6 +14,7 @@ import { deleteSong } from '../../src/db/songs';
 import { useSongDetail } from '../../src/hooks/useSongDetail';
 import { ScoreRow } from '../../src/types';
 import { ScoreBottomSheet } from '../../src/components/ScoreBottomSheet';
+import { ScoreChart } from '../../src/components/ScoreChart';
 
 export default function SongDetailScreen() {
   const insets = useSafeAreaInsets();
@@ -175,31 +176,6 @@ function HistoryRow({ score, onEdit }: { score: ScoreRow; onEdit: () => void }) 
   );
 }
 
-function ScoreChart({ scores }: { scores: ScoreRow[] }) {
-  const reversed = [...scores].reverse();
-  const values = reversed.map((s) => s.score);
-  const min = Math.min(...values) - 5;
-  const max = Math.max(...values) + 5;
-  const range = max - min;
-  const width = 260;
-  const height = 54;
-  const step = width / (values.length - 1);
-
-  const points = values.map((v, i) => ({
-    x: i * step,
-    y: height - ((v - min) / range) * height,
-  }));
-
-  const d = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ');
-
-  return (
-    <View style={styles.chartArea}>
-      <Text style={styles.chartSvgPlaceholder}>
-        {reversed.map((s) => s.score.toFixed(1)).join(' → ')}
-      </Text>
-    </View>
-  );
-}
 
 const styles = StyleSheet.create({
   screen: {
@@ -290,20 +266,6 @@ const styles = StyleSheet.create({
     color: colors.text2,
     letterSpacing: 0.8,
     fontWeight: '500',
-  },
-  chartArea: {
-    backgroundColor: colors.surface,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    borderRadius: 12,
-    padding: 10,
-    height: 74,
-    justifyContent: 'center',
-  },
-  chartSvgPlaceholder: {
-    fontSize: 11,
-    color: colors.text3,
-    textAlign: 'center',
   },
   historyRow: {
     flexDirection: 'row',
