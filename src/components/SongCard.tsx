@@ -1,4 +1,4 @@
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { colors } from '../constants/colors';
 import { fonts } from '../constants/fonts';
 import { SongWithStats } from '../types';
@@ -15,7 +15,11 @@ export function SongCard({ song, onPressRecord }: Props) {
   return (
     <View style={styles.card}>
       <View style={styles.art}>
-        <Text style={styles.artEmoji}>🎵</Text>
+        {song.artwork_url ? (
+          <Image source={{ uri: song.artwork_url }} style={styles.artImage} />
+        ) : (
+          <Text style={styles.artEmoji}>🎵</Text>
+        )}
       </View>
 
       <View style={styles.info}>
@@ -84,6 +88,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
+    overflow: 'hidden',
+  },
+  artImage: {
+    width: 40,
+    height: 40,
   },
   artEmoji: {
     fontSize: 17,

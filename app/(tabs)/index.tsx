@@ -1,5 +1,5 @@
-import { router } from 'expo-router';
-import { useMemo, useRef, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   FlatList,
@@ -25,10 +25,17 @@ import { SongWithStats, TabRow } from '../../src/types';
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
-  const { tabsWithAll } = useTabs();
+  const { tabsWithAll, reload: reloadTabs } = useTabs();
   const [activeTabId, setActiveTabId] = useState<number>(ALL_TAB.id);
   const [query, setQuery] = useState('');
   const { songs, loading, error, reload } = useSongs(activeTabId);
+
+  useFocusEffect(
+    useCallback(() => {
+      reloadTabs();
+      reload();
+    }, [reloadTabs, reload])
+  );
   const [scoringSong, setScoringsSong] = useState<SongWithStats | null>(null);
   const swipeRefs = useRef<Map<number, Swipeable | null>>(new Map());
 

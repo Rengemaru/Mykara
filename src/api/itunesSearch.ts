@@ -1,0 +1,38 @@
+import { MusicSuggestion } from '../types';
+
+interface ItunesTrack {
+  trackName: string;
+  artistName: string;
+  artworkUrl100: string;
+  collectionName: string;
+}
+
+interface ItunesResponse {
+  resultCount: number;
+  results: ItunesTrack[];
+}
+
+export async function searchMusic(
+  query: string,
+  signal?: AbortSignal,
+  limit = 8
+): Promise<MusicSuggestion[]> {
+  const url =
+    `https://itunes.apple.com/search?term=${encodeURIComponent(query)}` +
+    `&country=JP&media=music&entity=song&limit=${limit}&lang=ja_jp`;
+  try {
+    const res = await fetch(url, { signal });
+    if (!res.ok) return [];
+    const data: ItunesResponse = await res.json();
+    return data.results.map((item) => ({
+      trackName: item.trackName ?? '',
+      artistName: item.artistName ?? '',
+      artworkUrl: item.artworkUrl100
+        ? item.artworkUrl100.replace('100x100bb', '600x600bb')
+        : null,
+      collectionName: item.collectionName ?? '',
+    }));
+  } catch {
+    return [];
+  }
+}

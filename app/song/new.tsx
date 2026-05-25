@@ -1,7 +1,9 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
+  Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -20,7 +22,9 @@ import { insertSong, updateSong, getSongById } from '../../src/db/songs';
 import { insertTab } from '../../src/db/tabs';
 import { syncTabs } from '../../src/db/songTabs';
 import { useTabs } from '../../src/hooks/useTabs';
+import { useMusicSearch } from '../../src/hooks/useMusicSearch';
 import { MOCK_SONGS } from '../../src/db/mockData';
+import { MusicSuggestion } from '../../src/types';
 
 export default function SongFormScreen() {
   const insets = useSafeAreaInsets();
@@ -31,9 +35,12 @@ export default function SongFormScreen() {
   const [title, setTitle] = useState('');
   const [artist, setArtist] = useState('');
   const [keyOffset, setKeyOffset] = useState<number | null>(null);
+  const [artworkUrl, setArtworkUrl] = useState<string | null>(null);
   const [selectedTabIds, setSelectedTabIds] = useState<number[]>([]);
   const [newTabModalVisible, setNewTabModalVisible] = useState(false);
   const [newTabName, setNewTabName] = useState('');
+
+  const { suggestions, isSearching, clearSuggestions } = useMusicSearch(title);
 
   useEffect(() => {
     if (!isEdit) return;
@@ -45,11 +52,19 @@ export default function SongFormScreen() {
       setTitle(song.title);
       setArtist(song.artist);
       setKeyOffset(song.key_offset);
+      setArtworkUrl(song.artwork_url);
       setSelectedTabIds(song.tabs.map((t) => t.id));
     } catch (e) {
       console.error(e);
     }
   }, [songId, isEdit]);
+
+  function handleSelectSuggestion(item: MusicSuggestion) {
+    setTitle(item.trackName);
+    setArtist(item.artistName);
+    setArtworkUrl(item.artworkUrl);
+    clearSuggestions();
+  }
 
   function toggleTab(tabId: number) {
     setSelectedTabIds((prev) =>
@@ -84,10 +99,10 @@ export default function SongFormScreen() {
     if (Platform.OS === 'web') { router.back(); return; }
     try {
       if (isEdit) {
-        updateSong(Number(songId), title.trim(), artist.trim(), keyOffset);
+        updateSong(Number(songId), title.trim(), artist.trim(), keyOffset, artworkUrl);
         syncTabs(Number(songId), selectedTabIds);
       } else {
-        const newId = insertSong(title.trim(), artist.trim(), keyOffset);
+        const newId = insertSong(title.trim(), artist.trim(), keyOffset, artworkUrl);
         syncTabs(newId, selectedTabIds);
       }
       router.back();
@@ -118,18 +133,58 @@ export default function SongFormScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* 曲名 */}
+          {/* 曲名 + サジェスト */}
           <View style={styles.fieldGroup}>
-            <Text style={styles.fieldLabel}>曲名</Text>
+            <View style={styles.fieldLabelRow}>
+              <Text style={styles.fieldLabel}>曲名</Text>
+              {isSearching && <ActivityIndicator size="small" color={colors.accent} style={styles.searchSpinner} />}
+            </View>
             <TextInput
               style={styles.fieldInput}
               value={title}
-              onChangeText={setTitle}
-              placeholder="曲名を入力"
+              onChangeText={(v) => { setTitle(v); setArtworkUrl(null); }}
+              placeholder="曲名 or アーティスト名で検索"
               placeholderTextColor={colors.text3}
               returnKeyType="next"
             />
+            {suggestions.length > 0 && (
+              <View style={styles.suggestBox}>
+                {suggestions.map((item, idx) => (
+                  <TouchableOpacity
+                    key={idx}
+                    style={[styles.suggestRow, idx === suggestions.length - 1 && styles.suggestRowLast]}
+                    onPress={() => handleSelectSuggestion(item)}
+                    activeOpacity={0.7}
+                  >
+                    {item.artworkUrl ? (
+                      <Image source={{ uri: item.artworkUrl }} style={styles.suggestArt} />
+                    ) : (
+                      <View style={[styles.suggestArt, styles.suggestArtPlaceholder]}>
+                        <Text style={styles.suggestArtPlaceholderText}>♪</Text>
+                      </View>
+                    )}
+                    <View style={styles.suggestInfo}>
+                      <Text style={styles.suggestTitle} numberOfLines={1}>{item.trackName}</Text>
+                      <Text style={styles.suggestArtist} numberOfLines={1}>{item.artistName}</Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
           </View>
+
+          {/* アートワークプレビュー（サジェスト選択時のみ表示） */}
+          {artworkUrl && (
+            <View style={styles.artworkPreviewRow}>
+              <Image source={{ uri: artworkUrl }} style={styles.artworkPreview} />
+              <View style={styles.artworkPreviewInfo}>
+                <Text style={styles.artworkPreviewLabel}>アルバムアート取得済み</Text>
+                <TouchableOpacity onPress={() => setArtworkUrl(null)}>
+                  <Text style={styles.artworkPreviewRemove}>削除</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
 
           {/* アーティスト名 */}
           <View style={styles.fieldGroup}>
@@ -266,6 +321,94 @@ const styles = StyleSheet.create({
     paddingVertical: 11,
     fontSize: 13,
     color: colors.text,
+  },
+  fieldLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  searchSpinner: {
+    marginBottom: 2,
+  },
+  suggestBox: {
+    marginTop: 4,
+    backgroundColor: colors.white,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    borderRadius: 11,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  suggestRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  suggestRowLast: {
+    borderBottomWidth: 0,
+  },
+  suggestArt: {
+    width: 40,
+    height: 40,
+    borderRadius: 6,
+  },
+  suggestArtPlaceholder: {
+    backgroundColor: colors.surface2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  suggestArtPlaceholderText: {
+    fontSize: 16,
+    color: colors.text3,
+  },
+  suggestInfo: {
+    flex: 1,
+  },
+  suggestTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  suggestArtist: {
+    fontSize: 11,
+    color: colors.text2,
+    marginTop: 2,
+  },
+  artworkPreviewRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: colors.surface,
+    borderWidth: 1.5,
+    borderColor: 'rgba(91, 76, 245, 0.2)',
+    borderRadius: 11,
+    padding: 10,
+  },
+  artworkPreview: {
+    width: 48,
+    height: 48,
+    borderRadius: 8,
+  },
+  artworkPreviewInfo: {
+    flex: 1,
+    gap: 4,
+  },
+  artworkPreviewLabel: {
+    fontSize: 11,
+    color: colors.accent,
+    fontWeight: '500',
+  },
+  artworkPreviewRemove: {
+    fontSize: 11,
+    color: colors.red,
   },
   tabSelector: {
     flexDirection: 'row',

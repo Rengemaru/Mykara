@@ -53,7 +53,7 @@ export function ScoreBottomSheet({ visible, song, editingScore, onClose, onSaved
       return;
     }
     if (key === '.') {
-      if (input.includes('.')) return;
+      if (input === '' || input.includes('.')) return;
       setInput((prev) => prev + '.');
       return;
     }

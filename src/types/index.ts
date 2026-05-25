@@ -1,3 +1,11 @@
+// ---- iTunes Search API のサジェスト結果 ----
+export interface MusicSuggestion {
+  trackName: string;
+  artistName: string;
+  artworkUrl: string | null;
+  collectionName: string;
+}
+
 // ---- DB から取得したままの形（snake_case） ----
 export interface SongRow {
   id: number;

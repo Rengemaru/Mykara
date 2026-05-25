@@ -67,18 +67,29 @@ export function getSongById(id: number): SongWithStats | null {
   };
 }
 
-export function insertSong(title: string, artist: string, keyOffset: number | null): number {
+export function insertSong(
+  title: string,
+  artist: string,
+  keyOffset: number | null,
+  artworkUrl?: string | null
+): number {
   const result = getDb().runSync(
-    'INSERT INTO songs (title, artist, key_offset, created_at) VALUES (?, ?, ?, ?)',
-    [title, artist, keyOffset, new Date().toISOString()]
+    'INSERT INTO songs (title, artist, key_offset, artwork_url, created_at) VALUES (?, ?, ?, ?, ?)',
+    [title, artist, keyOffset, artworkUrl ?? null, new Date().toISOString()]
   );
   return result.lastInsertRowId;
 }
 
-export function updateSong(id: number, title: string, artist: string, keyOffset: number | null): void {
+export function updateSong(
+  id: number,
+  title: string,
+  artist: string,
+  keyOffset: number | null,
+  artworkUrl?: string | null
+): void {
   getDb().runSync(
-    'UPDATE songs SET title = ?, artist = ?, key_offset = ? WHERE id = ?',
-    [title, artist, keyOffset, id]
+    'UPDATE songs SET title = ?, artist = ?, key_offset = ?, artwork_url = ? WHERE id = ?',
+    [title, artist, keyOffset, artworkUrl ?? null, id]
   );
 }
 
