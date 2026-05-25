@@ -11,7 +11,7 @@ export function getAllSongs(): SongWithStats[] {
     FROM songs s
     LEFT JOIN scores sc ON sc.song_id = s.id
     GROUP BY s.id
-    ORDER BY s.created_at DESC
+    ORDER BY s.sort_order ASC
   `);
   return songs.map((song) => ({
     ...song,
@@ -34,7 +34,7 @@ export function getSongsByTab(tabId: number): SongWithStats[] {
     LEFT JOIN scores sc ON sc.song_id = s.id
     WHERE st.tab_id = ?
     GROUP BY s.id
-    ORDER BY s.created_at DESC
+    ORDER BY s.sort_order ASC
   `, [tabId]);
   return songs.map((song) => ({
     ...song,
@@ -95,4 +95,10 @@ export function updateSong(
 
 export function deleteSong(id: number): void {
   getDb().runSync('DELETE FROM songs WHERE id = ?', [id]);
+}
+
+export function updateSongOrder(orderedIds: number[]): void {
+  orderedIds.forEach((id, index) => {
+    getDb().runSync('UPDATE songs SET sort_order = ? WHERE id = ?', [index, id]);
+  });
 }
