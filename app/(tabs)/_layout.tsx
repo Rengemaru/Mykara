@@ -60,7 +60,6 @@ const styles = StyleSheet.create({
   },
   navEmoji: {
     fontSize: 17,
-    lineHeight: 20,
   },
   navLabel: {
     fontSize: 9,
