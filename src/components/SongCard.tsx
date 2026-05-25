@@ -1,4 +1,3 @@
-import React from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { colors } from '../constants/colors';
 import { fonts } from '../constants/fonts';
@@ -7,10 +6,9 @@ import { SongWithStats } from '../types';
 interface Props {
   song: SongWithStats;
   onPressRecord: () => void;
-  dragHandle?: React.ReactNode;
 }
 
-export function SongCard({ song, onPressRecord, dragHandle }: Props) {
+export function SongCard({ song, onPressRecord }: Props) {
   const keyOffset = song.key_offset;
   const score = song.best_score;
 
@@ -37,7 +35,6 @@ export function SongCard({ song, onPressRecord, dragHandle }: Props) {
         <TouchableOpacity style={styles.recordBtn} onPress={onPressRecord}>
           <Text style={styles.recordBtnText}>✏️</Text>
         </TouchableOpacity>
-        {dragHandle}
       </View>
     </View>
   );

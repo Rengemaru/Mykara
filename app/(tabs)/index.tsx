@@ -2,6 +2,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   Alert,
+  FlatList,
   Platform,
   ScrollView,
   StyleSheet,
@@ -10,7 +11,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import { Swipeable } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EmptyState } from '../../src/components/EmptyState';
@@ -18,7 +18,7 @@ import { ScoreBottomSheet } from '../../src/components/ScoreBottomSheet';
 import { SongCard } from '../../src/components/SongCard';
 import { colors } from '../../src/constants/colors';
 import { fonts } from '../../src/constants/fonts';
-import { deleteSong, updateSongOrder } from '../../src/db/songs';
+import { deleteSong } from '../../src/db/songs';
 import { useSongs, ALL_TAB } from '../../src/hooks/useSongs';
 import { useTabs } from '../../src/hooks/useTabs';
 import { SongWithStats, TabRow } from '../../src/types';
@@ -146,67 +146,46 @@ export default function HomeScreen() {
           />
         </View>
       ) : (
-        <DraggableFlatList
+        <FlatList
           data={filtered}
           keyExtractor={(item) => String(item.id)}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
-          onDragEnd={({ data }) => {
-            if (Platform.OS === 'web') return;
-            try {
-              updateSongOrder(data.map((s) => s.id));
-              reload();
-            } catch (e) {
-              console.error(e);
-            }
-          }}
-          renderItem={({ item, drag, isActive }: RenderItemParams<SongWithStats>) => (
-            <ScaleDecorator>
-              <Swipeable
-                ref={(ref) => { swipeRefs.current.set(item.id, ref); }}
-                onSwipeableWillOpen={() => closeOtherSwipeables(item.id)}
-                overshootRight={false}
-                enabled={!isActive}
-                renderRightActions={() => (
-                  <View style={styles.swipeActions}>
-                    <TouchableOpacity
-                      style={[styles.swipeBtn, styles.swipeEditBtn]}
-                      onPress={() => {
-                        swipeRefs.current.get(item.id)?.close();
-                        router.push(`/song/new?songId=${item.id}`);
-                      }}
-                    >
-                      <Text style={styles.swipeBtnText}>✏️{'\n'}編集</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.swipeBtn, styles.swipeDeleteBtn]}
-                      onPress={() => {
-                        swipeRefs.current.get(item.id)?.close();
-                        handleDeleteSong(item);
-                      }}
-                    >
-                      <Text style={styles.swipeBtnText}>🗑{'\n'}削除</Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
-              >
-                <TouchableOpacity onPress={() => router.push(`/song/${item.id}`)}>
-                  <SongCard
-                    song={item}
-                    onPressRecord={() => setScoringsSong(item)}
-                    dragHandle={
-                      <TouchableOpacity
-                        style={styles.dragHandle}
-                        onLongPress={drag}
-                        delayLongPress={150}
-                      >
-                        <Text style={styles.dragHandleText}>≡</Text>
-                      </TouchableOpacity>
-                    }
-                  />
-                </TouchableOpacity>
-              </Swipeable>
-            </ScaleDecorator>
+          renderItem={({ item }) => (
+            <Swipeable
+              ref={(ref) => { swipeRefs.current.set(item.id, ref); }}
+              onSwipeableWillOpen={() => closeOtherSwipeables(item.id)}
+              overshootRight={false}
+              renderRightActions={() => (
+                <View style={styles.swipeActions}>
+                  <TouchableOpacity
+                    style={[styles.swipeBtn, styles.swipeEditBtn]}
+                    onPress={() => {
+                      swipeRefs.current.get(item.id)?.close();
+                      router.push(`/song/new?songId=${item.id}`);
+                    }}
+                  >
+                    <Text style={styles.swipeBtnText}>✏️{'\n'}編集</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.swipeBtn, styles.swipeDeleteBtn]}
+                    onPress={() => {
+                      swipeRefs.current.get(item.id)?.close();
+                      handleDeleteSong(item);
+                    }}
+                  >
+                    <Text style={styles.swipeBtnText}>🗑{'\n'}削除</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            >
+              <TouchableOpacity onPress={() => router.push(`/song/${item.id}`)}>
+                <SongCard
+                  song={item}
+                  onPressRecord={() => setScoringsSong(item)}
+                />
+              </TouchableOpacity>
+            </Swipeable>
           )}
         />
       )}
@@ -354,16 +333,5 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     textAlign: 'center',
-  },
-  dragHandle: {
-    width: 28,
-    height: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dragHandleText: {
-    fontSize: 16,
-    color: colors.text3,
-    letterSpacing: 1,
   },
 });
