@@ -10,7 +10,7 @@ interface Props {
 
 export function SongCard({ song, onPressRecord }: Props) {
   const keyOffset = song.key_offset;
-  const score = song.latest_score ?? song.best_score;
+  const score = song.best_score;
 
   return (
     <View style={styles.card}>
@@ -30,7 +30,7 @@ export function SongCard({ song, onPressRecord }: Props) {
       <View style={styles.right}>
         <KeyBadge keyOffset={keyOffset} />
         <Text style={styles.score}>
-          {score != null ? score.toFixed(1) : '—'}
+          {score != null && score > 0 ? score.toFixed(1) : '—'}
         </Text>
         <TouchableOpacity style={styles.recordBtn} onPress={onPressRecord}>
           <Text style={styles.recordBtnText}>✏️</Text>

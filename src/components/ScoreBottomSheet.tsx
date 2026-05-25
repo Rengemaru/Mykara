@@ -47,6 +47,16 @@ export function ScoreBottomSheet({ visible, song, editingScore, onClose, onSaved
     return d.toISOString().split('T')[0];
   }
 
+  function shiftDate(n: number) {
+    setDate((prev) => {
+      const next = new Date(prev + 'T00:00:00');
+      next.setDate(next.getDate() + n);
+      const today = new Date(todayString() + 'T00:00:00');
+      if (next > today) return prev;
+      return next.toISOString().split('T')[0];
+    });
+  }
+
   function handleKey(key: string) {
     if (key === '⌫') {
       setInput((prev) => prev.slice(0, -1));
@@ -93,7 +103,7 @@ export function ScoreBottomSheet({ visible, song, editingScore, onClose, onSaved
   const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', '⌫'];
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="slide" statusBarTranslucent onRequestClose={onClose}>
       <TouchableWithoutFeedback onPress={onClose}>
         <View style={styles.overlay} />
       </TouchableWithoutFeedback>
@@ -133,9 +143,19 @@ export function ScoreBottomSheet({ visible, song, editingScore, onClose, onSaved
         {/* 日付 */}
         <View style={styles.dateRow}>
           <Text>📅</Text>
+          <TouchableOpacity style={styles.dateNavBtn} onPress={() => shiftDate(-1)}>
+            <Text style={styles.dateNavText}>‹</Text>
+          </TouchableOpacity>
           <View style={styles.dateVal}>
             <Text style={styles.dateText}>{date}</Text>
           </View>
+          <TouchableOpacity
+            style={[styles.dateNavBtn, date === todayString() && styles.dateNavBtnDisabled]}
+            onPress={() => shiftDate(1)}
+            disabled={date === todayString()}
+          >
+            <Text style={[styles.dateNavText, date === todayString() && styles.dateNavTextDisabled]}>›</Text>
+          </TouchableOpacity>
         </View>
 
         {/* 保存ボタン */}
@@ -255,6 +275,27 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: 11,
     color: colors.text,
+  },
+  dateNavBtn: {
+    width: 28,
+    height: 28,
+    backgroundColor: colors.surface2,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dateNavBtnDisabled: {
+    opacity: 0.3,
+  },
+  dateNavText: {
+    fontSize: 16,
+    color: colors.text2,
+    lineHeight: 20,
+  },
+  dateNavTextDisabled: {
+    color: colors.text3,
   },
   saveBtn: {
     backgroundColor: colors.accent,

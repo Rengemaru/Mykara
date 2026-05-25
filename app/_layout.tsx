@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import { Stack } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useFonts } from 'expo-font';
 import {
@@ -38,9 +39,10 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={styles.root}>
+      <StatusBar style="dark" backgroundColor="#f0f2f7" translucent={false} />
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="song/new" options={{ presentation: 'modal', headerShown: false }} />
+        <Stack.Screen name="song/new" options={{ presentation: 'modal', animation: 'slide_from_bottom', headerShown: false }} />
         <Stack.Screen name="song/[id]" options={{ headerShown: false }} />
         <Stack.Screen name="tabs" options={{ headerShown: false }} />
       </Stack>

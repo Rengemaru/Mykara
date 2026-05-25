@@ -15,11 +15,13 @@ interface ItunesResponse {
 export async function searchMusic(
   query: string,
   signal?: AbortSignal,
-  limit = 8
+  limit = 8,
+  attribute?: string
 ): Promise<MusicSuggestion[]> {
-  const url =
+  let url =
     `https://itunes.apple.com/search?term=${encodeURIComponent(query)}` +
     `&country=JP&media=music&entity=song&limit=${limit}&lang=ja_jp`;
+  if (attribute) url += `&attribute=${encodeURIComponent(attribute)}`;
   try {
     const res = await fetch(url, { signal });
     if (!res.ok) return [];

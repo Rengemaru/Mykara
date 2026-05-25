@@ -7,12 +7,20 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#f0f2f7"
+    },
     "ios": {
-      "supportsTablet": true
+      "bundleIdentifier": "com.rengemaru.mykara",
+      "supportsTablet": false
     },
     "android": {
+      "package": "com.rengemaru.mykara",
+      "versionCode": 1,
+      "permissions": ["android.permission.INTERNET"],
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -24,7 +32,8 @@
     },
     "plugins": [
       "expo-router",
-      "expo-font"
+      "expo-font",
+      "expo-sqlite"
     ],
     "extra": {
       "router": {},

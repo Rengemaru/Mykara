@@ -40,7 +40,19 @@ export default function SongFormScreen() {
   const [newTabModalVisible, setNewTabModalVisible] = useState(false);
   const [newTabName, setNewTabName] = useState('');
 
-  const { suggestions, isSearching, clearSuggestions } = useMusicSearch(title);
+  const {
+    suggestions: titleSuggestions,
+    isSearching: isTitleSearching,
+    clearSuggestions: clearTitleSuggestions,
+    resumeSearch: resumeTitleSearch,
+  } = useMusicSearch(title, 300, 'songTerm');
+
+  const {
+    suggestions: artistSuggestions,
+    isSearching: isArtistSearching,
+    clearSuggestions: clearArtistSuggestions,
+    resumeSearch: resumeArtistSearch,
+  } = useMusicSearch(artist, 300, 'artistTerm');
 
   useEffect(() => {
     if (!isEdit) return;
@@ -63,7 +75,8 @@ export default function SongFormScreen() {
     setTitle(item.trackName);
     setArtist(item.artistName);
     setArtworkUrl(item.artworkUrl);
-    clearSuggestions();
+    clearTitleSuggestions();
+    clearArtistSuggestions();
   }
 
   function toggleTab(tabId: number) {
@@ -115,7 +128,7 @@ export default function SongFormScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={[styles.screen, { paddingTop: insets.top + 6 }]}>
         {/* ヘッダー */}
@@ -137,22 +150,22 @@ export default function SongFormScreen() {
           <View style={styles.fieldGroup}>
             <View style={styles.fieldLabelRow}>
               <Text style={styles.fieldLabel}>曲名</Text>
-              {isSearching && <ActivityIndicator size="small" color={colors.accent} style={styles.searchSpinner} />}
+              {isTitleSearching && <ActivityIndicator size="small" color={colors.accent} style={styles.searchSpinner} />}
             </View>
             <TextInput
               style={styles.fieldInput}
               value={title}
-              onChangeText={(v) => { setTitle(v); setArtworkUrl(null); }}
-              placeholder="曲名 or アーティスト名で検索"
+              onChangeText={(v) => { setTitle(v); setArtworkUrl(null); resumeTitleSearch(); }}
+              placeholder="曲名で検索"
               placeholderTextColor={colors.text3}
               returnKeyType="next"
             />
-            {suggestions.length > 0 && (
+            {titleSuggestions.length > 0 && (
               <View style={styles.suggestBox}>
-                {suggestions.map((item, idx) => (
+                {titleSuggestions.map((item, idx) => (
                   <TouchableOpacity
                     key={idx}
-                    style={[styles.suggestRow, idx === suggestions.length - 1 && styles.suggestRowLast]}
+                    style={[styles.suggestRow, idx === titleSuggestions.length - 1 && styles.suggestRowLast]}
                     onPress={() => handleSelectSuggestion(item)}
                     activeOpacity={0.7}
                   >
@@ -186,17 +199,44 @@ export default function SongFormScreen() {
             </View>
           )}
 
-          {/* アーティスト名 */}
+          {/* アーティスト名 + サジェスト */}
           <View style={styles.fieldGroup}>
-            <Text style={styles.fieldLabel}>アーティスト名</Text>
+            <View style={styles.fieldLabelRow}>
+              <Text style={styles.fieldLabel}>アーティスト名</Text>
+              {isArtistSearching && <ActivityIndicator size="small" color={colors.accent} style={styles.searchSpinner} />}
+            </View>
             <TextInput
               style={styles.fieldInput}
               value={artist}
-              onChangeText={setArtist}
-              placeholder="アーティスト名を入力"
+              onChangeText={(v) => { setArtist(v); resumeArtistSearch(); }}
+              placeholder="アーティスト名で検索"
               placeholderTextColor={colors.text3}
               returnKeyType="done"
             />
+            {artistSuggestions.length > 0 && (
+              <View style={styles.suggestBox}>
+                {artistSuggestions.map((item, idx) => (
+                  <TouchableOpacity
+                    key={idx}
+                    style={[styles.suggestRow, idx === artistSuggestions.length - 1 && styles.suggestRowLast]}
+                    onPress={() => handleSelectSuggestion(item)}
+                    activeOpacity={0.7}
+                  >
+                    {item.artworkUrl ? (
+                      <Image source={{ uri: item.artworkUrl }} style={styles.suggestArt} />
+                    ) : (
+                      <View style={[styles.suggestArt, styles.suggestArtPlaceholder]}>
+                        <Text style={styles.suggestArtPlaceholderText}>♪</Text>
+                      </View>
+                    )}
+                    <View style={styles.suggestInfo}>
+                      <Text style={styles.suggestTitle} numberOfLines={1}>{item.trackName}</Text>
+                      <Text style={styles.suggestArtist} numberOfLines={1}>{item.artistName}</Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
           </View>
 
           {/* タブ選択 */}
@@ -234,11 +274,12 @@ export default function SongFormScreen() {
         </ScrollView>
 
         {/* 新規タブ作成モーダル */}
-        <Modal visible={newTabModalVisible} transparent animationType="fade" onRequestClose={() => setNewTabModalVisible(false)}>
-          <TouchableWithoutFeedback onPress={() => setNewTabModalVisible(false)}>
-            <View style={styles.modalOverlay} />
-          </TouchableWithoutFeedback>
-          <View style={styles.modalBox}>
+        <Modal visible={newTabModalVisible} transparent animationType="fade" statusBarTranslucent onRequestClose={() => setNewTabModalVisible(false)}>
+          <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+            <TouchableWithoutFeedback onPress={() => setNewTabModalVisible(false)}>
+              <View style={styles.modalOverlay} />
+            </TouchableWithoutFeedback>
+            <View style={styles.modalBox}>
             <Text style={styles.modalTitle}>新しいタブを作成</Text>
             <TextInput
               style={styles.modalInput}
@@ -259,6 +300,7 @@ export default function SongFormScreen() {
               </TouchableOpacity>
             </View>
           </View>
+          </KeyboardAvoidingView>
         </Modal>
 
         {/* 保存ボタン */}
@@ -473,14 +515,13 @@ const styles = StyleSheet.create({
     color: colors.white,
   },
   modalOverlay: {
-    flex: 1,
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.4)',
   },
   modalBox: {
-    position: 'absolute',
-    top: '40%',
-    left: 32,
-    right: 32,
+    marginHorizontal: 32,
+    marginBottom: 'auto',
+    marginTop: 'auto',
     backgroundColor: colors.white,
     borderRadius: 16,
     padding: 20,
