@@ -1,15 +1,53 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { Platform, StyleSheet, View } from 'react-native';
 import { Stack } from 'expo-router';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { useFonts } from 'expo-font';
+import {
+  PlusJakartaSans_700Bold,
+  PlusJakartaSans_800ExtraBold,
+} from '@expo-google-fonts/plus-jakarta-sans';
+import {
+  DMMono_400Regular,
+  DMMono_500Medium,
+} from '@expo-google-fonts/dm-mono';
 import { initDatabase } from '../src/db/client';
+import { seedIfEmpty } from '../src/db/seed';
 
 export default function RootLayout() {
+  const [fontsLoaded] = useFonts({
+    PlusJakartaSans_700Bold,
+    PlusJakartaSans_800ExtraBold,
+    DMMono_400Regular,
+    DMMono_500Medium,
+  });
+
+  // Web uses mock data — no DB init needed. Native must finish init before rendering.
+  const [dbReady, setDbReady] = useState(Platform.OS === 'web');
+
   useEffect(() => {
+    if (Platform.OS === 'web') return;
     initDatabase();
+    seedIfEmpty();
+    setDbReady(true);
   }, []);
 
+  if (!fontsLoaded || !dbReady) {
+    return <View style={styles.root} />;
+  }
+
   return (
-    <Stack>
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-    </Stack>
+    <GestureHandlerRootView style={styles.root}>
+      <Stack>
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="song/new" options={{ presentation: 'modal', headerShown: false }} />
+        <Stack.Screen name="song/[id]" options={{ headerShown: false }} />
+        <Stack.Screen name="tabs" options={{ headerShown: false }} />
+      </Stack>
+    </GestureHandlerRootView>
   );
 }
+
+const styles = StyleSheet.create({
+  root: { flex: 1 },
+});

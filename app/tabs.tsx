@@ -1,0 +1,398 @@
+import { router } from 'expo-router';
+import { useState } from 'react';
+import {
+  Alert,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { colors } from '../src/constants/colors';
+import { insertTab, updateTab, deleteTab, updateTabOrder } from '../src/db/tabs';
+import { useTabs } from '../src/hooks/useTabs';
+import { EmptyState } from '../src/components/EmptyState';
+import { TabRow } from '../src/types';
+
+export default function TabsScreen() {
+  const insets = useSafeAreaInsets();
+  const { tabs, reload } = useTabs();
+  const [modalMode, setModalMode] = useState<'add' | 'edit' | null>(null);
+  const [editingTab, setEditingTab] = useState<TabRow | null>(null);
+  const [inputName, setInputName] = useState('');
+
+  function openAddModal() {
+    setInputName('');
+    setEditingTab(null);
+    setModalMode('add');
+  }
+
+  function openEditModal(tab: TabRow) {
+    setInputName(tab.name);
+    setEditingTab(tab);
+    setModalMode('edit');
+  }
+
+  function closeModal() {
+    setModalMode(null);
+    setEditingTab(null);
+    setInputName('');
+  }
+
+  function handleConfirm() {
+    if (!inputName.trim()) return;
+    if (Platform.OS === 'web') { closeModal(); return; }
+    try {
+      if (modalMode === 'add') {
+        insertTab(inputName.trim());
+      } else if (modalMode === 'edit' && editingTab) {
+        updateTab(editingTab.id, inputName.trim());
+      }
+      reload();
+    } catch (e) {
+      console.error(e);
+      Alert.alert('エラー', '保存に失敗しました');
+    }
+    closeModal();
+  }
+
+  function handleDelete(tab: TabRow) {
+    Alert.alert(
+      'タブを削除',
+      `「${tab.name}」を削除しますか？\n紐づく曲は削除されません。`,
+      [
+        { text: 'キャンセル', style: 'cancel' },
+        {
+          text: '削除する',
+          style: 'destructive',
+          onPress: () => {
+            if (Platform.OS === 'web') { return; }
+            try {
+              deleteTab(tab.id);
+              reload();
+            } catch (e) {
+              console.error(e);
+              Alert.alert('エラー', '削除に失敗しました');
+            }
+          },
+        },
+      ]
+    );
+  }
+
+  function moveTab(index: number, direction: 'up' | 'down') {
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= tabs.length) return;
+    if (Platform.OS === 'web') return;
+    const newTabs = [...tabs];
+    [newTabs[index], newTabs[targetIndex]] = [newTabs[targetIndex], newTabs[index]];
+    try {
+      updateTabOrder(newTabs.map((t, i) => ({ id: t.id, sort_order: i + 1 })));
+      reload();
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  return (
+    <View style={[styles.screen, { paddingTop: insets.top }]}>
+      {/* ヘッダー */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()}>
+          <Text style={styles.backBtn}>‹</Text>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>タブを編集</Text>
+      </View>
+
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 100 }]}
+      >
+        <Text style={styles.hint}>タブはカラオケの持ち歌カテゴリです。曲に複数のタブを付けられます。</Text>
+
+        <View style={styles.group}>
+          {tabs.length === 0 ? (
+            <EmptyState
+              emoji="🗂"
+              title="タブがありません"
+              subtitle="「＋ タブを追加」からカテゴリを作成しましょう"
+            />
+          ) : (
+            tabs.map((tab, index) => (
+              <View
+                key={tab.id}
+                style={[styles.row, index === tabs.length - 1 && styles.rowLast]}
+              >
+                <View style={styles.tabIcon}>
+                  <Text style={styles.tabIconText}>🗂</Text>
+                </View>
+                <Text style={styles.tabName} numberOfLines={1}>{tab.name}</Text>
+                <View style={styles.actions}>
+                  <TouchableOpacity
+                    style={[styles.arrowBtn, index === 0 && styles.arrowBtnDisabled]}
+                    onPress={() => moveTab(index, 'up')}
+                    disabled={index === 0}
+                  >
+                    <Text style={[styles.arrowText, index === 0 && styles.arrowTextDisabled]}>↑</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.arrowBtn, index === tabs.length - 1 && styles.arrowBtnDisabled]}
+                    onPress={() => moveTab(index, 'down')}
+                    disabled={index === tabs.length - 1}
+                  >
+                    <Text style={[styles.arrowText, index === tabs.length - 1 && styles.arrowTextDisabled]}>↓</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.editBtn} onPress={() => openEditModal(tab)}>
+                    <Text style={styles.editBtnText}>✏️</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDelete(tab)}>
+                    <Text style={styles.deleteBtnText}>🗑</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))
+          )}
+        </View>
+
+        <TouchableOpacity style={styles.addBtn} onPress={openAddModal}>
+          <Text style={styles.addBtnText}>＋ タブを追加</Text>
+        </TouchableOpacity>
+      </ScrollView>
+
+      {/* 追加・編集モーダル */}
+      <Modal
+        visible={modalMode !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={closeModal}
+      >
+        <TouchableWithoutFeedback onPress={closeModal}>
+          <View style={styles.modalOverlay} />
+        </TouchableWithoutFeedback>
+        <View style={styles.modalBox}>
+          <Text style={styles.modalTitle}>
+            {modalMode === 'add' ? '新しいタブを作成' : 'タブ名を変更'}
+          </Text>
+          <TextInput
+            style={styles.modalInput}
+            value={inputName}
+            onChangeText={setInputName}
+            placeholder="タブ名を入力"
+            placeholderTextColor={colors.text3}
+            autoFocus
+            returnKeyType="done"
+            onSubmitEditing={handleConfirm}
+          />
+          <View style={styles.modalActions}>
+            <TouchableOpacity style={styles.modalCancel} onPress={closeModal}>
+              <Text style={styles.modalCancelText}>キャンセル</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.modalConfirm} onPress={handleConfirm}>
+              <Text style={styles.modalConfirmText}>
+                {modalMode === 'add' ? '作成' : '保存'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: colors.bg,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 18,
+    paddingVertical: 6,
+    paddingBottom: 12,
+  },
+  backBtn: {
+    fontSize: 22,
+    color: colors.accent,
+    fontWeight: '600',
+  },
+  headerTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  scroll: {
+    paddingHorizontal: 18,
+    gap: 14,
+  },
+  hint: {
+    fontSize: 11,
+    color: colors.text3,
+    lineHeight: 16,
+  },
+  group: {
+    backgroundColor: colors.white,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    borderRadius: 14,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 2,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  rowLast: {
+    borderBottomWidth: 0,
+  },
+  tabIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    backgroundColor: colors.accentSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  tabIconText: {
+    fontSize: 14,
+  },
+  tabName: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '500',
+    color: colors.text,
+  },
+  actions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  arrowBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 7,
+    backgroundColor: colors.surface2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  arrowBtnDisabled: {
+    opacity: 0.3,
+  },
+  arrowText: {
+    fontSize: 13,
+    color: colors.text2,
+    fontWeight: '600',
+  },
+  arrowTextDisabled: {
+    color: colors.text3,
+  },
+  editBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 7,
+    backgroundColor: colors.accentSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  editBtnText: {
+    fontSize: 13,
+  },
+  deleteBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 7,
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteBtnText: {
+    fontSize: 13,
+  },
+  addBtn: {
+    backgroundColor: colors.white,
+    borderWidth: 1.5,
+    borderColor: colors.accent,
+    borderRadius: 13,
+    paddingVertical: 13,
+    alignItems: 'center',
+  },
+  addBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.accent,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+  },
+  modalBox: {
+    position: 'absolute',
+    top: '40%',
+    left: 32,
+    right: 32,
+    backgroundColor: colors.white,
+    borderRadius: 16,
+    padding: 20,
+    gap: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 24,
+    elevation: 8,
+  },
+  modalTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  modalInput: {
+    backgroundColor: colors.surface,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 13,
+    color: colors.text,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 10,
+  },
+  modalCancel: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  modalCancelText: {
+    fontSize: 13,
+    color: colors.text2,
+  },
+  modalConfirm: {
+    backgroundColor: colors.accent,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  modalConfirmText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.white,
+  },
+});
