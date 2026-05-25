@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   Alert,
   Modal,
+  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -69,6 +70,10 @@ export function ScoreBottomSheet({ visible, song, editingScore, onClose, onSaved
     }
     if (!date) {
       Alert.alert('入力エラー', '日付を入力してください');
+      return;
+    }
+    if (Platform.OS === 'web') {
+      onSaved();
       return;
     }
     try {

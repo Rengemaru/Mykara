@@ -1,7 +1,9 @@
 import { router } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
+  Alert,
   FlatList,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -9,19 +11,54 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { Swipeable } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ScoreBottomSheet } from '../../src/components/ScoreBottomSheet';
 import { SongCard } from '../../src/components/SongCard';
 import { colors } from '../../src/constants/colors';
+import { deleteSong } from '../../src/db/songs';
 import { useSongs, ALL_TAB } from '../../src/hooks/useSongs';
 import { useTabs } from '../../src/hooks/useTabs';
-import { TabRow } from '../../src/types';
+import { SongWithStats, TabRow } from '../../src/types';
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { tabsWithAll } = useTabs();
   const [activeTabId, setActiveTabId] = useState<number>(ALL_TAB.id);
   const [query, setQuery] = useState('');
-  const { songs, loading, error } = useSongs(activeTabId);
+  const { songs, loading, error, reload } = useSongs(activeTabId);
+  const [scoringSong, setScoringsSong] = useState<SongWithStats | null>(null);
+  const swipeRefs = useRef<Map<number, Swipeable | null>>(new Map());
+
+  function closeOtherSwipeables(currentId: number) {
+    swipeRefs.current.forEach((ref, id) => {
+      if (id !== currentId) ref?.close();
+    });
+  }
+
+  function handleDeleteSong(song: SongWithStats) {
+    Alert.alert(
+      '曲を削除',
+      `「${song.title}」を削除しますか？\nスコア履歴もすべて削除されます。`,
+      [
+        { text: 'キャンセル', style: 'cancel' },
+        {
+          text: '削除する',
+          style: 'destructive',
+          onPress: () => {
+            if (Platform.OS === 'web') { reload(); return; }
+            try {
+              deleteSong(song.id);
+              reload();
+            } catch (e) {
+              console.error(e);
+              Alert.alert('エラー', '削除に失敗しました');
+            }
+          },
+        },
+      ]
+    );
+  }
 
   const filtered = useMemo(() => {
     if (!query.trim()) return songs;
@@ -106,15 +143,54 @@ export default function HomeScreen() {
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => (
-            <TouchableOpacity onPress={() => router.push(`/song/${item.id}`)}>
-              <SongCard
-                song={item}
-                onPressRecord={() => {
-                  // Phase 2-6で実装
-                }}
-              />
-            </TouchableOpacity>
+            <Swipeable
+              ref={(ref) => swipeRefs.current.set(item.id, ref)}
+              onSwipeableWillOpen={() => closeOtherSwipeables(item.id)}
+              overshootRight={false}
+              renderRightActions={() => (
+                <View style={styles.swipeActions}>
+                  <TouchableOpacity
+                    style={[styles.swipeBtn, styles.swipeEditBtn]}
+                    onPress={() => {
+                      swipeRefs.current.get(item.id)?.close();
+                      router.push(`/song/new?songId=${item.id}`);
+                    }}
+                  >
+                    <Text style={styles.swipeBtnText}>✏️{'\n'}編集</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.swipeBtn, styles.swipeDeleteBtn]}
+                    onPress={() => {
+                      swipeRefs.current.get(item.id)?.close();
+                      handleDeleteSong(item);
+                    }}
+                  >
+                    <Text style={styles.swipeBtnText}>🗑{'\n'}削除</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            >
+              <TouchableOpacity onPress={() => router.push(`/song/${item.id}`)}>
+                <SongCard
+                  song={item}
+                  onPressRecord={() => setScoringsSong(item)}
+                />
+              </TouchableOpacity>
+            </Swipeable>
           )}
+        />
+      )}
+
+      {scoringSong && (
+        <ScoreBottomSheet
+          visible={!!scoringSong}
+          song={scoringSong}
+          editingScore={null}
+          onClose={() => setScoringsSong(null)}
+          onSaved={() => {
+            setScoringsSong(null);
+            reload();
+          }}
         />
       )}
     </View>
@@ -243,5 +319,31 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 14,
     color: colors.red,
+  },
+  swipeActions: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    paddingLeft: 8,
+    gap: 6,
+  },
+  swipeBtn: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 14,
+    minWidth: 64,
+    paddingHorizontal: 10,
+  },
+  swipeEditBtn: {
+    backgroundColor: colors.accent,
+  },
+  swipeDeleteBtn: {
+    backgroundColor: colors.red,
+    marginRight: 0,
+  },
+  swipeBtnText: {
+    color: colors.white,
+    fontSize: 11,
+    fontWeight: '700',
+    textAlign: 'center',
   },
 });

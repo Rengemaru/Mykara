@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Platform } from 'react-native';
 import { TabRow } from '../types';
 import { getAllTabs } from '../db/tabs';
 import { ALL_TAB } from './useSongs';
+import { MOCK_TABS } from '../db/mockData';
 
 export function useTabs() {
   const [tabs, setTabs] = useState<TabRow[]>([]);
@@ -11,6 +13,12 @@ export function useTabs() {
   const reload = useCallback(() => {
     try {
       setLoading(true);
+      if (Platform.OS === 'web') {
+        setTabs(MOCK_TABS);
+        setError(null);
+        setLoading(false);
+        return;
+      }
       const data = getAllTabs();
       setTabs(data);
       setError(null);
@@ -26,7 +34,6 @@ export function useTabs() {
     reload();
   }, [reload]);
 
-  // 「すべて」タブを先頭に固定して返す
   const tabsWithAll = [ALL_TAB, ...tabs] as const;
 
   return { tabs, tabsWithAll, loading, error, reload };
