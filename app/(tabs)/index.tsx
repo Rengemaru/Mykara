@@ -152,7 +152,7 @@ export default function HomeScreen() {
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
           onDragEnd={({ data }) => {
-            if (Platform.OS === 'web') return;
+            if (Platform.OS === 'web' || query.trim()) return;
             try {
               updateSongOrder(data.map((s) => s.id));
               reload();
