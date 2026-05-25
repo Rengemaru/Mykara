@@ -14,7 +14,6 @@ import { Swipeable } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../src/constants/colors';
 import { fonts } from '../../src/constants/fonts';
-import { deleteSong } from '../../src/db/songs';
 import { deleteScore } from '../../src/db/scores';
 import { useSongDetail } from '../../src/hooks/useSongDetail';
 import { ScoreRow } from '../../src/types';
@@ -52,26 +51,6 @@ export default function SongDetailScreen() {
         },
       ]
     );
-  }
-
-  function handleDeleteSong() {
-    Alert.alert('曲を削除', `「${song?.title}」を削除しますか？\nスコア履歴もすべて削除されます。`, [
-      { text: 'キャンセル', style: 'cancel' },
-      {
-        text: '削除',
-        style: 'destructive',
-        onPress: () => {
-          if (Platform.OS === 'web') { router.back(); return; }
-          try {
-            deleteSong(songId);
-            router.back();
-          } catch (e) {
-            console.error(e);
-            Alert.alert('エラー', '削除に失敗しました');
-          }
-        },
-      },
-    ]);
   }
 
   if (loading) {
@@ -133,7 +112,7 @@ export default function SongDetailScreen() {
               <View>
                 <Text style={styles.bestLabel}>最高スコア</Text>
                 <Text style={styles.bestValue}>
-                  {song.best_score != null ? song.best_score.toFixed(1) : '—'}
+                  {song.best_score != null && song.best_score > 0 ? song.best_score.toFixed(1) : '—'}
                 </Text>
                 {diff != null && (
                   <Text style={[styles.bestDiff, { color: diff >= 0 ? colors.green : colors.red }]}>
@@ -208,15 +187,13 @@ export default function SongDetailScreen() {
   );
 }
 
-function HistoryRow({
-  score,
-  onEdit,
-  onDelete,
-}: {
+interface HistoryRowProps {
   score: ScoreRow;
   onEdit: () => void;
   onDelete: () => void;
-}) {
+}
+
+function HistoryRow({ score, onEdit, onDelete }: HistoryRowProps) {
   return (
     <Swipeable
       overshootRight={false}
