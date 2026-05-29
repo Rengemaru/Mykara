@@ -14,6 +14,7 @@ import {
 } from '@expo-google-fonts/dm-mono';
 import { initDatabase } from '../src/db/client';
 import { seedIfEmpty } from '../src/db/seed';
+import { MachineProvider } from '../src/contexts/MachineContext';
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -42,12 +43,16 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={styles.root}>
       <StatusBar style="dark" backgroundColor="#f0f2f7" translucent={false} />
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="song/new" options={{ presentation: 'modal', animation: 'slide_from_bottom', headerShown: false }} />
-        <Stack.Screen name="song/[id]" options={{ headerShown: false }} />
-        <Stack.Screen name="tabs" options={{ headerShown: false }} />
-      </Stack>
+      <MachineProvider>
+        <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="song/new" options={{ presentation: 'modal', animation: 'slide_from_bottom', headerShown: false }} />
+          <Stack.Screen name="song/[id]" options={{ headerShown: false }} />
+          <Stack.Screen name="tabs" options={{ headerShown: false }} />
+          <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+          <Stack.Screen name="settings/machine" options={{ headerShown: false }} />
+        </Stack>
+      </MachineProvider>
     </GestureHandlerRootView>
   );
 }

@@ -9,31 +9,31 @@ export const MOCK_TABS: TabRow[] = [
 export const MOCK_SONGS: SongWithStats[] = [
   {
     id: 1, title: 'ガーネット', artist: '奥華子', key_offset: 1,
-    artwork_url: null, created_at: '2026-05-01T00:00:00',
+    artwork_url: null, memo: '', created_at: '2026-05-01T00:00:00',
     best_score: 92.4, latest_score: 92.4, score_count: 4,
     tabs: [MOCK_TABS[0]],
   },
   {
     id: 2, title: 'Lemon', artist: '米津玄師', key_offset: -3,
-    artwork_url: null, created_at: '2026-05-02T00:00:00',
+    artwork_url: null, memo: '', created_at: '2026-05-02T00:00:00',
     best_score: 89.1, latest_score: 89.1, score_count: 2,
     tabs: [MOCK_TABS[0]],
   },
   {
     id: 3, title: '夜に駆ける', artist: 'YOASOBI', key_offset: 2,
-    artwork_url: null, created_at: '2026-05-03T00:00:00',
+    artwork_url: null, memo: '', created_at: '2026-05-03T00:00:00',
     best_score: 85.7, latest_score: 85.7, score_count: 2,
     tabs: [MOCK_TABS[0], MOCK_TABS[2]],
   },
   {
     id: 4, title: 'カタオモイ', artist: 'Aimer', key_offset: null,
-    artwork_url: null, created_at: '2026-05-04T00:00:00',
+    artwork_url: null, memo: '', created_at: '2026-05-04T00:00:00',
     best_score: 88.3, latest_score: 88.3, score_count: 1,
     tabs: [],
   },
   {
     id: 5, title: '炎', artist: 'LiSA', key_offset: -1,
-    artwork_url: null, created_at: '2026-05-05T00:00:00',
+    artwork_url: null, memo: '', created_at: '2026-05-05T00:00:00',
     best_score: 83.2, latest_score: 83.2, score_count: 2,
     tabs: [MOCK_TABS[1], MOCK_TABS[2]],
   },
