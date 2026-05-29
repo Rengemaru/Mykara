@@ -28,6 +28,17 @@ export const MIGRATIONS: Migration[] = [
       `);
     },
   },
+  {
+    version: 3,
+    description: 'add machine column to scores (delete existing test data)',
+    up: async (db) => {
+      await db.execAsync(`DELETE FROM scores`);
+      await db.execAsync(`
+        ALTER TABLE scores ADD COLUMN machine TEXT NOT NULL
+          CHECK (machine IN ('DAM', 'JOYSOUND'))
+      `);
+    },
+  },
 ];
 
 export async function runMigrations(db: SQLite.SQLiteDatabase): Promise<void> {

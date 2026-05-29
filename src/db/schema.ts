@@ -22,7 +22,8 @@ export const schema = `
     id        INTEGER PRIMARY KEY AUTOINCREMENT,
     song_id   INTEGER NOT NULL REFERENCES songs(id) ON DELETE CASCADE,
     score     REAL    NOT NULL,
-    scored_at TEXT    NOT NULL
+    scored_at TEXT    NOT NULL,
+    machine   TEXT    NOT NULL CHECK (machine IN ('DAM', 'JOYSOUND'))
   );
   CREATE TABLE IF NOT EXISTS settings (
     key   TEXT PRIMARY KEY,
