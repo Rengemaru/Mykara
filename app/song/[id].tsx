@@ -4,6 +4,7 @@ import {
   Alert,
   FlatList,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -133,6 +134,16 @@ export default function SongDetailScreen() {
                 <ScoreChart scores={scores} />
               </View>
             )}
+
+            {/* メモ */}
+            {song.memo ? (
+              <View style={styles.memoCard}>
+                <Text style={styles.memoLabel}>メモ</Text>
+                <ScrollView scrollEnabled={false}>
+                  <Text style={styles.memoText}>{song.memo}</Text>
+                </ScrollView>
+              </View>
+            ) : null}
 
             {/* 履歴セクションラベル */}
             {scores.length > 0 && (
@@ -311,6 +322,25 @@ const styles = StyleSheet.create({
     color: colors.text2,
     letterSpacing: 0.8,
     fontWeight: '500',
+  },
+  memoCard: {
+    backgroundColor: colors.surface,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    borderRadius: 12,
+    padding: 12,
+    gap: 4,
+  },
+  memoLabel: {
+    fontSize: 10,
+    color: colors.text2,
+    letterSpacing: 0.8,
+    fontWeight: '500',
+  },
+  memoText: {
+    fontSize: 13,
+    color: colors.text,
+    lineHeight: 20,
   },
   historyRow: {
     flexDirection: 'row',

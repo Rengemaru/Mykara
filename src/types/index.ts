@@ -13,6 +13,7 @@ export interface SongRow {
   artist: string;
   key_offset: number | null;
   artwork_url: string | null;
+  memo: string;
   created_at: string;
 }
 

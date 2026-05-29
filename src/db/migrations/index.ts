@@ -6,7 +6,17 @@ export type Migration = {
   up: (db: SQLite.SQLiteDatabase) => Promise<void>;
 };
 
-export const MIGRATIONS: Migration[] = [];
+export const MIGRATIONS: Migration[] = [
+  {
+    version: 1,
+    description: 'add memo column to songs',
+    up: async (db) => {
+      await db.execAsync(
+        `ALTER TABLE songs ADD COLUMN memo TEXT NOT NULL DEFAULT ''`
+      );
+    },
+  },
+];
 
 export async function runMigrations(db: SQLite.SQLiteDatabase): Promise<void> {
   await db.execAsync(`

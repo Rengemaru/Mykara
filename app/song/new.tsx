@@ -36,6 +36,7 @@ export default function SongFormScreen() {
   const [artist, setArtist] = useState('');
   const [keyOffset, setKeyOffset] = useState<number | null>(null);
   const [artworkUrl, setArtworkUrl] = useState<string | null>(null);
+  const [memo, setMemo] = useState('');
   const [selectedTabIds, setSelectedTabIds] = useState<number[]>([]);
   const [newTabModalVisible, setNewTabModalVisible] = useState(false);
   const [newTabName, setNewTabName] = useState('');
@@ -65,6 +66,7 @@ export default function SongFormScreen() {
       setArtist(song.artist);
       setKeyOffset(song.key_offset);
       setArtworkUrl(song.artwork_url);
+      setMemo(song.memo);
       setSelectedTabIds(song.tabs.map((t) => t.id));
     } catch (e) {
       console.error(e);
@@ -112,10 +114,10 @@ export default function SongFormScreen() {
     if (Platform.OS === 'web') { router.back(); return; }
     try {
       if (isEdit) {
-        updateSong(Number(songId), title.trim(), artist.trim(), keyOffset, artworkUrl);
+        updateSong(Number(songId), title.trim(), artist.trim(), keyOffset, artworkUrl, memo);
         syncTabs(Number(songId), selectedTabIds);
       } else {
-        const newId = insertSong(title.trim(), artist.trim(), keyOffset, artworkUrl);
+        const newId = insertSong(title.trim(), artist.trim(), keyOffset, artworkUrl, memo);
         syncTabs(newId, selectedTabIds);
       }
       router.back();
@@ -271,6 +273,21 @@ export default function SongFormScreen() {
             <Text style={styles.fieldLabel}>キー（音域）</Text>
             <KeyStepper value={keyOffset} onChange={setKeyOffset} />
           </View>
+
+          {/* メモ */}
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>メモ</Text>
+            <TextInput
+              style={[styles.fieldInput, styles.memoInput]}
+              value={memo}
+              onChangeText={setMemo}
+              placeholder="メモ（自由入力）"
+              placeholderTextColor={colors.text3}
+              multiline
+              numberOfLines={3}
+              textAlignVertical="top"
+            />
+          </View>
         </ScrollView>
 
         {/* 新規タブ作成モーダル */}
@@ -363,6 +380,10 @@ const styles = StyleSheet.create({
     paddingVertical: 11,
     fontSize: 13,
     color: colors.text,
+  },
+  memoInput: {
+    minHeight: 72,
+    paddingTop: 11,
   },
   fieldLabelRow: {
     flexDirection: 'row',
