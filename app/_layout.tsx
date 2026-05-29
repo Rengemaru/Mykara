@@ -28,9 +28,11 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (Platform.OS === 'web') return;
-    initDatabase();
-    seedIfEmpty();
-    setDbReady(true);
+    (async () => {
+      await initDatabase();
+      seedIfEmpty();
+      setDbReady(true);
+    })();
   }, []);
 
   if (!fontsLoaded || !dbReady) {
