@@ -24,4 +24,8 @@ export const schema = `
     score     REAL    NOT NULL,
     scored_at TEXT    NOT NULL
   );
+  CREATE TABLE IF NOT EXISTS settings (
+    key   TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+  );
 `;
