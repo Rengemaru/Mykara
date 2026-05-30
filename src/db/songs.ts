@@ -98,3 +98,10 @@ export function updateSong(
 export function deleteSong(id: number): void {
   getDb().runSync('DELETE FROM songs WHERE id = ?', [id]);
 }
+
+export function findDuplicateSong(title: string, artist: string): { id: number } | null {
+  return getDb().getFirstSync<{ id: number }>(
+    `SELECT id FROM songs WHERE LOWER(TRIM(title)) = LOWER(TRIM(?)) AND LOWER(TRIM(artist)) = LOWER(TRIM(?)) LIMIT 1`,
+    [title, artist]
+  );
+}
