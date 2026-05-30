@@ -18,7 +18,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyStepper } from '../../src/components/KeyStepper';
 import { colors } from '../../src/constants/colors';
-import { insertSong, updateSong, getSongById } from '../../src/db/songs';
+import { insertSong, updateSong, getSongById, findDuplicateSong } from '../../src/db/songs';
 import { insertTab } from '../../src/db/tabs';
 import { syncTabs } from '../../src/db/songTabs';
 import { useTabs } from '../../src/hooks/useTabs';
@@ -112,19 +112,40 @@ export default function SongFormScreen() {
       return;
     }
     if (Platform.OS === 'web') { router.back(); return; }
-    try {
-      if (isEdit) {
-        updateSong(Number(songId), title.trim(), artist.trim(), keyOffset, artworkUrl, memo);
-        syncTabs(Number(songId), selectedTabIds);
-      } else {
-        const newId = insertSong(title.trim(), artist.trim(), keyOffset, artworkUrl, memo);
-        syncTabs(newId, selectedTabIds);
+
+    function doSave() {
+      try {
+        if (isEdit) {
+          updateSong(Number(songId), title.trim(), artist.trim(), keyOffset, artworkUrl, memo);
+          syncTabs(Number(songId), selectedTabIds);
+        } else {
+          const newId = insertSong(title.trim(), artist.trim(), keyOffset, artworkUrl, memo);
+          syncTabs(newId, selectedTabIds);
+        }
+        router.back();
+      } catch (e) {
+        console.error(e);
+        Alert.alert('エラー', '保存に失敗しました');
       }
-      router.back();
-    } catch (e) {
-      console.error(e);
-      Alert.alert('エラー', '保存に失敗しました');
     }
+
+    if (!isEdit) {
+      const duplicate = findDuplicateSong(title.trim(), artist.trim());
+      if (duplicate) {
+        const artistLabel = artist.trim() ? `（${artist.trim()}）` : '';
+        Alert.alert(
+          '重複登録',
+          `「${title.trim()}」${artistLabel}はすでに登録されています。それでも追加しますか？`,
+          [
+            { text: '戻る', style: 'cancel' },
+            { text: 'それでも登録する', onPress: doSave },
+          ]
+        );
+        return;
+      }
+    }
+
+    doSave();
   }
 
   return (
