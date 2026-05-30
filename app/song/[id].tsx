@@ -3,6 +3,7 @@ import { useState } from 'react';
 import {
   Alert,
   FlatList,
+  Image,
   Platform,
   ScrollView,
   StyleSheet,
@@ -29,6 +30,7 @@ export default function SongDetailScreen() {
   const { song, scores, loading, error, reload } = useSongDetail(songId);
   const [sheetVisible, setSheetVisible] = useState(false);
   const [editingScore, setEditingScore] = useState<ScoreRow | null>(null);
+  const [artworkError, setArtworkError] = useState(false);
 
   function handleDeleteScore(score: ScoreRow) {
     Alert.alert(
@@ -103,6 +105,25 @@ export default function SongDetailScreen() {
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 120 }]}
         ListHeaderComponent={
           <View style={styles.listHeader}>
+            {/* アートワーク */}
+            <View style={styles.artHeader}>
+              <View style={styles.artBox}>
+                {song.artwork_url && !artworkError ? (
+                  <Image
+                    source={{ uri: song.artwork_url }}
+                    style={styles.artImage}
+                    onError={() => setArtworkError(true)}
+                  />
+                ) : (
+                  <Text style={styles.artEmoji}>🎵</Text>
+                )}
+              </View>
+              <View style={styles.artInfo}>
+                <Text style={styles.artTitle} numberOfLines={2}>{song.title}</Text>
+                <Text style={styles.artArtist} numberOfLines={1}>{song.artist || '—'}</Text>
+              </View>
+            </View>
+
             {/* 最高スコアカード */}
             <LinearGradient
               colors={['#ede9fe', '#f5f3ff']}
@@ -309,6 +330,46 @@ const styles = StyleSheet.create({
   listHeader: {
     gap: 13,
     paddingBottom: 8,
+  },
+  artHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 13,
+  },
+  artBox: {
+    width: 64,
+    height: 64,
+    borderRadius: 13,
+    backgroundColor: colors.surface2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 2,
+  },
+  artImage: {
+    width: 64,
+    height: 64,
+  },
+  artEmoji: {
+    fontSize: 28,
+  },
+  artInfo: {
+    flex: 1,
+  },
+  artTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  artArtist: {
+    fontSize: 11,
+    color: colors.text2,
+    marginTop: 3,
   },
   bestCard: {
     borderWidth: 1.5,
