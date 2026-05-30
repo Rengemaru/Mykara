@@ -1,11 +1,11 @@
-# MyKara — Claude Code 指示書
+# 歌帳 — Claude Code 指示書
 
 > **このファイルはClaude Codeへの完全な指示書です。**
 > 開発者（オーナー）はExpo学習を兼ねて個人開発しています。
 > 実装の前に必ずこのファイル全体を読んでから作業を開始してください。
 
-> **ワイヤーフレーム参照**: `docs/wireframes/wireframe_v3.html`
-> Phase 2 UI実装時は必ずこのワイヤーフレームをデザイン基準として参照すること。
+> **ワイヤーフレーム参照**: `docs/wireframes/歌帳 ワイヤーフレーム v5.html`
+> UI実装時は必ずこのワイヤーフレームをデザイン基準として参照すること。
 
 ---
 
@@ -13,7 +13,7 @@
 
 | 項目 | 内容 |
 |---|---|
-| アプリ名 | MyKara |
+| アプリ名 | 歌帳 |
 | 概要 | カラオケの持ち歌・点数を管理するiOSアプリ |
 | ターゲット | App Store（iOS）で一般公開 |
 | 開発OS | Windows |
@@ -26,11 +26,12 @@
 
 | 役割 | 選定 | 理由 |
 |---|---|---|
-| フレームワーク | React Native + Expo (SDK 51以上) | Windows環境でiOSビルド可能 |
+| フレームワーク | React Native + Expo (SDK 54) | Windows環境でiOSビルド可能 |
 | 画面遷移 | expo-router v3 | ファイルベースルーティング |
 | ローカルDB | expo-sqlite | SQL・多対多・CASCADE削除が必要なため |
-| グラフ | Victory Native | 点数推移の折れ線グラフ |
-| 曲情報補完 | iTunes Search API | 無料・申請不要（Phase 2） |
+| グラフ | react-native-gifted-charts | 点数推移の折れ線グラフ（data/data2で2系列対応） |
+| 曲情報補完 | iTunes Search API | 無料・申請不要（MVP実装済み） |
+| ファイル共有 | expo-sharing + expo-file-system | バックアップJSON書き出し |
 | ビルド | EAS Build | Mac不要・クラウドビルド |
 | 提出 | EAS Submit | Windowsから申請可能 |
 | 言語 | TypeScript（strict mode） | 型安全を最重視 |
@@ -47,27 +48,43 @@ mykara/
 │   │   └── settings.tsx          # 05 設定
 │   ├── song/
 │   │   ├── [id].tsx              # 02 曲詳細
-│   │   └── new.tsx               # 04 曲登録（モーダル）
-│   └── _layout.tsx               # ルートレイアウト
+│   │   └── new.tsx               # 04 曲登録・編集（モーダル）
+│   ├── settings/
+│   │   └── machine.tsx           # デフォルト機種選択
+│   ├── tabs.tsx                  # タブ管理
+│   ├── onboarding.tsx            # 初回オンボーディング
+│   └── _layout.tsx               # ルートレイアウト（MachineProvider・オンボーディングガード）
 ├── src/
 │   ├── db/
-│   │   ├── client.ts             # DB接続・初期化
-│   │   ├── schema.ts             # テーブル定義SQL
+│   │   ├── client.ts             # DB接続・初期化・マイグレーション呼び出し
+│   │   ├── schema.ts             # テーブル定義SQL（新規インストール用ベースライン）
+│   │   ├── migrations/
+│   │   │   └── index.ts          # マイグレーション定義・ランナー
 │   │   ├── songs.ts              # Song CRUD関数
 │   │   ├── tabs.ts               # Tab CRUD関数
 │   │   ├── scores.ts             # Score CRUD関数
-│   │   └── songTabs.ts           # song_tabs 操作関数
+│   │   ├── songTabs.ts           # song_tabs 操作関数
+│   │   └── settings.ts           # settings テーブルCRUD（AsyncStorage不使用）
 │   ├── types/
-│   │   └── index.ts              # 全型定義（Song / Tab / Score）
+│   │   └── index.ts              # 全型定義（Song / Tab / Score / Machine）
 │   ├── hooks/
 │   │   ├── useSongs.ts           # 曲一覧取得フック
 │   │   ├── useSongDetail.ts      # 曲詳細・スコア取得フック
-│   │   └── useTabs.ts            # タブ一覧取得フック
+│   │   ├── useTabs.ts            # タブ一覧取得フック
+│   │   └── useMusicSearch.ts     # iTunes検索フック（1文字以上で発火）
+│   ├── contexts/
+│   │   └── MachineContext.tsx    # 現在機種のReact Context
+│   ├── lib/
+│   │   ├── machine.ts            # 機種ロジック・セッション管理・オンボーディング
+│   │   └── backup.ts             # バックアップJSON構築・共有シート起動
+│   ├── api/
+│   │   └── itunesSearch.ts       # iTunes Search API クライアント
 │   └── components/
 │       ├── SongCard.tsx          # 曲カード（ホーム用）
-│       ├── ScoreBottomSheet.tsx  # 点数入力・編集ボトムシート
+│       ├── ScoreBottomSheet.tsx  # 点数入力・編集ボトムシート（機種トグル付き）
+│       ├── ScoreChart.tsx        # 折れ線グラフ（gifted-charts、DAM/JOYSOUND 2系列）
 │       ├── KeyStepper.tsx        # キー（音域）ステッパー
-│       └── ScoreChart.tsx        # 折れ線グラフ（Victory Native）
+│       └── EmptyState.tsx        # 空状態・ローディング・エラー表示
 ├── assets/
 ├── app.json
 ├── eas.json
@@ -77,9 +94,9 @@ mykara/
 
 ---
 
-## 3. データ設計（確定・変更不可）
+## 3. データ設計
 
-### 3-1. テーブル定義
+### 3-1. テーブル定義（現在の完全スキーマ）
 
 ```sql
 -- タブ（カテゴリ）
@@ -94,9 +111,10 @@ CREATE TABLE IF NOT EXISTS songs (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
   title       TEXT    NOT NULL,
   artist      TEXT    NOT NULL DEFAULT '',
-  key_offset  INTEGER,           -- NULL=未設定、+2、-1 など整数
-  artwork_url TEXT,              -- Phase 2: iTunes APIから取得
-  created_at  TEXT    NOT NULL   -- ISO8601（例: "2026-05-25T21:00:00"）
+  key_offset  INTEGER,                    -- NULL=未設定、+2、-1 など整数
+  artwork_url TEXT,                       -- iTunes APIから取得
+  memo        TEXT    NOT NULL DEFAULT '', -- メモ（自由入力）
+  created_at  TEXT    NOT NULL            -- ISO8601（例: "2026-05-25T21:00:00"）
 );
 
 -- 曲↔タブ 中間テーブル（多対多）
@@ -110,12 +128,43 @@ CREATE TABLE IF NOT EXISTS song_tabs (
 CREATE TABLE IF NOT EXISTS scores (
   id        INTEGER PRIMARY KEY AUTOINCREMENT,
   song_id   INTEGER NOT NULL REFERENCES songs(id) ON DELETE CASCADE,
-  score     REAL    NOT NULL,    -- 小数・整数どちらも対応（例: 92.450）
-  scored_at TEXT    NOT NULL     -- 記録日（例: "2026-05-25"）
+  score     REAL    NOT NULL,             -- 小数・整数どちらも対応（例: 92.450）
+  scored_at TEXT    NOT NULL,             -- 記録日（例: "2026-05-25"）
+  machine   TEXT    NOT NULL              -- 'DAM' or 'JOYSOUND'（DEFAULT なし・必須）
+    CHECK (machine IN ('DAM', 'JOYSOUND'))
+);
+
+-- アプリ設定（キー・バリュー形式）
+-- ⚠️ AsyncStorage は使用禁止。すべて settings テーブルで管理する
+CREATE TABLE IF NOT EXISTS settings (
+  key   TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);
+
+-- マイグレーション管理
+CREATE TABLE IF NOT EXISTS db_version (
+  version INTEGER NOT NULL
 );
 ```
 
-### 3-2. 設計方針
+**settings テーブルのキー一覧**
+
+| key | 内容 | 備考 |
+|---|---|---|
+| `default_machine` | デフォルト機種（`DAM` または `JOYSOUND`） | 設定画面で変更可 |
+| `onboarding_completed` | オンボーディング完了フラグ（`"true"`） | 初回起動後に書き込み |
+| `session_machine` | セッション中の機種 | バックアップ対象外 |
+| `session_date` | セッション日付（ローカル日付 YYYY-MM-DD） | バックアップ対象外 |
+
+### 3-2. マイグレーション機構
+
+- `src/db/migrations/index.ts` にマイグレーション定義を配列で管理
+- `db_version` テーブルで適用済みバージョンを追跡
+- `initDatabase()` 呼び出し時に未適用のマイグレーションを自動実行
+- **新しいカラム/テーブルを追加する際は必ずマイグレーションを追加する**
+- 現在のマイグレーション：v1（memo列）→ v2（settingsテーブル）→ v3（machine列）
+
+### 3-3. 設計方針
 
 | 項目 | 決定内容 |
 |---|---|
@@ -125,6 +174,8 @@ CREATE TABLE IF NOT EXISTS scores (
 | タブ | 自由記述・カスタム命名 |
 | 曲削除時 | scores・song_tabs も連鎖削除（ON DELETE CASCADE） |
 | タブ削除時 | song_tabs の該当行のみ削除。曲自体は残る |
+| 永続化 | **AsyncStorage 使用禁止**。すべて settings テーブルを使う |
+| セッション機種 | session_machine + session_date で当日限り記憶（翌日はdefaultに戻る） |
 
 ---
 
@@ -138,6 +189,7 @@ export interface SongRow {
   artist: string;
   key_offset: number | null;
   artwork_url: string | null;
+  memo: string;
   created_at: string;
 }
 
@@ -152,6 +204,7 @@ export interface ScoreRow {
   song_id: number;
   score: number;
   scored_at: string;
+  machine: string;  // 'DAM' | 'JOYSOUND'
 }
 
 // ---- アプリ内で使う集計済みの形 ----
@@ -161,6 +214,10 @@ export interface SongWithStats extends SongRow {
   score_count: number;          // 記録回数
   tabs: TabRow[];               // 紐づくタブ一覧
 }
+
+// ---- 機種 ----
+export type Machine = 'DAM' | 'JOYSOUND';
+export const MACHINES: readonly Machine[] = ['DAM', 'JOYSOUND'];
 ```
 
 ---
@@ -962,7 +1019,7 @@ export function useSongs(tabId: number) {
 
 | リスク | 対策 |
 |---|---|
-| Victory Nativeがインストールできない | Phase 0の0-9で早めに確認。代替: `react-native-gifted-charts` |
+| Victory Native（→ gifted-charts採用済み） | react-native-gifted-charts を使用中。data/data2で2系列対応 |
 | expo-sqliteの外部キー制約が動かない | `PRAGMA foreign_keys = ON` を起動時に必ず実行 |
 | EAS Buildでエラーが出る | `eas build --platform ios --profile development` から試す |
 | Apple Developer審査に時間がかかる | Phase 0の段階で申請開始 |
@@ -970,15 +1027,26 @@ export function useSongs(tabId: number) {
 
 ---
 
-## 11. Phase 2以降（将来対応・今は実装しない）
+## 11. 実装済み機能（MVP完了）
 
-- iTunes Search API連携（曲名補完・アルバムアート）
-- 機種タグ（DAM / JOYSOUND）
-- メモ機能
-- データエクスポート（CSV等）
+以下はすべて実装・動作確認済み：
+
+| 機能 | 実装内容 |
+|---|---|
+| iTunes Search API連携 | 曲名・アーティスト名補完、アルバムアート取得（1文字以上で発火） |
+| 機種選択（DAM / JOYSOUND） | オンボーディング・記録時・設定画面で選択可。セッション記憶付き |
+| メモ機能 | 曲登録・編集フォームに自由入力欄。詳細画面に表示 |
+| 重複登録チェック | 同名曲登録時に確認ダイアログ（大文字小文字・スペース無視） |
+| バックアップ（JSONエクスポート） | 全テーブルをJSON書き出し・共有シートで保存先選択 |
+| 詳細画面アートワーク | 曲詳細にiTunesアートワーク64x64表示（fallback: 🎵） |
+| グラフ（DAM/JOYSOUND 2系列） | gifted-charts の data/data2 でマシン別色分け折れ線 |
+
+## 12. 今後の対応候補
+
+- バックアップの復元（インポート）機能
 - Android対応
+- App Store申請・公開
 
 ---
 
-*このファイルはプロジェクトのルートに `CLAUDE.md` として配置すること。*
-*Claude Codeは起動時にこのファイルを自動で読み込む。*
+*このファイルは `docs/instructions/CLAUDE.md` として配置されている。*
