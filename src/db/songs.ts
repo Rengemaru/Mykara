@@ -71,11 +71,12 @@ export function insertSong(
   title: string,
   artist: string,
   keyOffset: number | null,
-  artworkUrl?: string | null
+  artworkUrl?: string | null,
+  memo: string = ''
 ): number {
   const result = getDb().runSync(
-    'INSERT INTO songs (title, artist, key_offset, artwork_url, created_at) VALUES (?, ?, ?, ?, ?)',
-    [title, artist, keyOffset, artworkUrl ?? null, new Date().toISOString()]
+    'INSERT INTO songs (title, artist, key_offset, artwork_url, memo, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+    [title, artist, keyOffset, artworkUrl ?? null, memo, new Date().toISOString()]
   );
   return result.lastInsertRowId;
 }
@@ -85,14 +86,22 @@ export function updateSong(
   title: string,
   artist: string,
   keyOffset: number | null,
-  artworkUrl?: string | null
+  artworkUrl?: string | null,
+  memo: string = ''
 ): void {
   getDb().runSync(
-    'UPDATE songs SET title = ?, artist = ?, key_offset = ?, artwork_url = ? WHERE id = ?',
-    [title, artist, keyOffset, artworkUrl ?? null, id]
+    'UPDATE songs SET title = ?, artist = ?, key_offset = ?, artwork_url = ?, memo = ? WHERE id = ?',
+    [title, artist, keyOffset, artworkUrl ?? null, memo, id]
   );
 }
 
 export function deleteSong(id: number): void {
   getDb().runSync('DELETE FROM songs WHERE id = ?', [id]);
+}
+
+export function findDuplicateSong(title: string, artist: string): { id: number } | null {
+  return getDb().getFirstSync<{ id: number }>(
+    `SELECT id FROM songs WHERE LOWER(TRIM(title)) = LOWER(TRIM(?)) AND LOWER(TRIM(artist)) = LOWER(TRIM(?)) LIMIT 1`,
+    [title, artist]
+  );
 }

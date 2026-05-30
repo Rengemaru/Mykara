@@ -14,6 +14,8 @@ import { colors } from '../constants/colors';
 import { fonts } from '../constants/fonts';
 import { insertScore, updateScore } from '../db/scores';
 import { ScoreRow, SongWithStats } from '../types';
+import { useMachine } from '../contexts/MachineContext';
+import type { Machine } from '../lib/machine';
 
 const MAX_SCORE = 100;
 
@@ -27,20 +29,24 @@ interface Props {
 
 export function ScoreBottomSheet({ visible, song, editingScore, onClose, onSaved }: Props) {
   const insets = useSafeAreaInsets();
+  const { currentMachine, setCurrentMachine } = useMachine();
   const [input, setInput] = useState('');
   const [date, setDate] = useState('');
+  const [machine, setMachine] = useState<Machine>(currentMachine);
 
   useEffect(() => {
     if (visible) {
       if (editingScore) {
         setInput(String(editingScore.score));
         setDate(editingScore.scored_at);
+        setMachine((editingScore.machine as Machine) || currentMachine);
       } else {
         setInput('');
         setDate(todayString());
+        setMachine(currentMachine);
       }
     }
-  }, [visible, editingScore]);
+  }, [visible, editingScore, currentMachine]);
 
   function todayString() {
     const d = new Date();
@@ -73,7 +79,7 @@ export function ScoreBottomSheet({ visible, song, editingScore, onClose, onSaved
     setInput(next);
   }
 
-  function handleSave() {
+  async function handleSave() {
     const score = parseFloat(input);
     if (isNaN(score) || score < 0 || score > MAX_SCORE) {
       Alert.alert('入力エラー', '0〜100の数値を入力してください');
@@ -89,9 +95,10 @@ export function ScoreBottomSheet({ visible, song, editingScore, onClose, onSaved
     }
     try {
       if (editingScore) {
-        updateScore(editingScore.id, score, date);
+        updateScore(editingScore.id, score, date, machine);
       } else {
-        insertScore(song.id, score, date);
+        await setCurrentMachine(machine);
+        insertScore(song.id, score, date, machine);
       }
       onSaved();
     } catch (e) {
@@ -100,6 +107,7 @@ export function ScoreBottomSheet({ visible, song, editingScore, onClose, onSaved
     }
   }
 
+  const isEdit = !!editingScore;
   const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', '⌫'];
 
   return (
@@ -112,11 +120,11 @@ export function ScoreBottomSheet({ visible, song, editingScore, onClose, onSaved
         <View style={styles.handle} />
 
         <Text style={styles.title}>
-          {editingScore ? '点数を編集する' : '点数を記録する'}
+          {isEdit ? '点数を編集する' : '点数を記録する'}
         </Text>
         <Text style={styles.subtitle}>
           {song.title} ／ {song.artist || '—'}
-          {editingScore ? ` ／ ${editingScore.scored_at}` : ''}
+          {isEdit ? ` ／ ${editingScore.scored_at}` : ''}
         </Text>
 
         {/* スコア表示 */}
@@ -124,6 +132,36 @@ export function ScoreBottomSheet({ visible, song, editingScore, onClose, onSaved
           <Text style={styles.scoreNum}>{input || '0'}</Text>
           <Text style={styles.scoreUnit}>点</Text>
         </View>
+
+        {/* 機種トグル */}
+        <View style={styles.toggleRow}>
+          <Text style={styles.toggleLabel}>機種</Text>
+          <View style={styles.toggleBtns}>
+            {(['DAM', 'JOYSOUND'] as Machine[]).map((m) => (
+              <TouchableOpacity
+                key={m}
+                style={[
+                  styles.toggleBtn,
+                  machine === m && (m === 'DAM' ? styles.toggleBtnDam : styles.toggleBtnJoy),
+                ]}
+                onPress={() => setMachine(m)}
+              >
+                <View style={[styles.toggleDot, { backgroundColor: m === 'DAM' ? colors.dam : colors.joy }]} />
+                <Text style={[
+                  styles.toggleBtnText,
+                  machine === m && { color: m === 'DAM' ? colors.dam : colors.joy },
+                ]}>
+                  {m}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+        <Text style={styles.sessionHint}>
+          {isEdit
+            ? '※ 既存記録の機種を表示。変更してもセッションには影響しない'
+            : '※ 今日中はこの機種が記憶されます'}
+        </Text>
 
         {/* テンキー */}
         <View style={styles.numpad}>
@@ -161,7 +199,7 @@ export function ScoreBottomSheet({ visible, song, editingScore, onClose, onSaved
         {/* 保存ボタン */}
         <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
           <Text style={styles.saveBtnText}>
-            {editingScore ? '変更を保存する' : '記録する'}
+            {isEdit ? '変更を保存する' : '記録する'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -231,6 +269,61 @@ const styles = StyleSheet.create({
   scoreUnit: {
     fontSize: 12,
     color: colors.text2,
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 6,
+  },
+  toggleLabel: {
+    fontSize: 10,
+    color: colors.text2,
+    fontWeight: '500',
+    letterSpacing: 0.5,
+    minWidth: 32,
+  },
+  toggleBtns: {
+    flex: 1,
+    flexDirection: 'row',
+    gap: 4,
+  },
+  toggleBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    borderRadius: 9,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  toggleBtnDam: {
+    backgroundColor: colors.damSoft,
+    borderColor: colors.damBorder,
+  },
+  toggleBtnJoy: {
+    backgroundColor: colors.joySoft,
+    borderColor: colors.joyBorder,
+  },
+  toggleDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+  },
+  toggleBtnText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: colors.text2,
+  },
+  sessionHint: {
+    fontSize: 9,
+    color: colors.text3,
+    marginBottom: 9,
+    paddingLeft: 2,
   },
   numpad: {
     flexDirection: 'row',

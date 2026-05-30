@@ -13,6 +13,7 @@ export interface SongRow {
   artist: string;
   key_offset: number | null;
   artwork_url: string | null;
+  memo: string;
   created_at: string;
 }
 
@@ -27,6 +28,7 @@ export interface ScoreRow {
   song_id: number;
   score: number;
   scored_at: string;
+  machine: string;
 }
 
 // ---- アプリ内で使う集計済みの形 ----
