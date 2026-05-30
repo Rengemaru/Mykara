@@ -57,6 +57,8 @@ export default function SongFormScreen() {
 
   useEffect(() => {
     if (!isEdit) return;
+    resumeTitleSearch();
+    resumeArtistSearch();
     try {
       const song = Platform.OS === 'web'
         ? MOCK_SONGS.find(s => s.id === Number(songId)) ?? null
@@ -67,7 +69,7 @@ export default function SongFormScreen() {
       setKeyOffset(song.key_offset);
       setArtworkUrl(song.artwork_url);
       setMemo(song.memo);
-      setSelectedTabIds(song.tabs.map((t) => t.id));
+      setSelectedTabIds(song.tabs?.map((t) => t.id) ?? []);
     } catch (e) {
       console.error(e);
     }
