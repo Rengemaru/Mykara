@@ -83,9 +83,7 @@ export default function HomeScreen() {
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       {/* ヘッダー */}
       <View style={styles.header}>
-        <Text style={styles.appTitle}>
-          My<Text style={styles.appTitleAccent}>Kara</Text>
-        </Text>
+        <Text style={styles.appTitle}>歌帳</Text>
         <TouchableOpacity
           style={styles.addBtn}
           onPress={() => router.push('/song/new')}
@@ -224,10 +222,6 @@ const styles = StyleSheet.create({
     fontSize: 22,
     letterSpacing: -0.4,
     color: colors.text,
-  },
-  appTitleAccent: {
-    fontFamily: fonts.jakartaExtraBold,
-    color: colors.accent,
   },
   addBtn: {
     width: 34,

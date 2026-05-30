@@ -28,6 +28,7 @@ export interface ScoreRow {
   song_id: number;
   score: number;
   scored_at: string;
+  machine: string;
 }
 
 // ---- アプリ内で使う集計済みの形 ----

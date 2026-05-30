@@ -130,7 +130,23 @@ export default function SongDetailScreen() {
             {/* グラフ（スコアが2件以上あるとき表示） */}
             {scores.length >= 2 && (
               <View style={styles.chartSection}>
-                <Text style={styles.sectionLabel}>点数推移</Text>
+                <View style={styles.chartLabelRow}>
+                  <Text style={styles.sectionLabel}>点数推移</Text>
+                  <View style={styles.legend}>
+                    {scores.some((s) => s.machine === 'DAM') && (
+                      <View style={styles.legendItem}>
+                        <View style={[styles.legendDot, { backgroundColor: colors.dam }]} />
+                        <Text style={styles.legendLabel}>DAM</Text>
+                      </View>
+                    )}
+                    {scores.some((s) => s.machine === 'JOYSOUND') && (
+                      <View style={styles.legendItem}>
+                        <View style={[styles.legendDot, { backgroundColor: colors.joy }]} />
+                        <Text style={styles.legendLabel}>JOYSOUND</Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
                 <ScoreChart scores={scores} />
               </View>
             )}
@@ -227,6 +243,17 @@ function HistoryRow({ score, onEdit, onDelete }: HistoryRowProps) {
     >
       <View style={styles.historyRow}>
         <Text style={styles.historyDate}>{score.scored_at}</Text>
+        <View style={[
+          styles.machineBadge,
+          score.machine === 'DAM' ? styles.machineBadgeDam : styles.machineBadgeJoy,
+        ]}>
+          <Text style={[
+            styles.machineBadgeText,
+            { color: score.machine === 'DAM' ? colors.dam : colors.joy },
+          ]}>
+            {score.machine === 'DAM' ? 'DAM' : 'JOY'}
+          </Text>
+        </View>
         <Text style={styles.historyScore}>{score.score.toFixed(1)}</Text>
       </View>
     </Swipeable>
@@ -317,6 +344,30 @@ const styles = StyleSheet.create({
   chartSection: {
     gap: 6,
   },
+  chartLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  legend: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  legendDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  legendLabel: {
+    fontSize: 9,
+    fontWeight: '500',
+    color: colors.text2,
+  },
   sectionLabel: {
     fontSize: 10,
     color: colors.text2,
@@ -355,6 +406,26 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: colors.text3,
     width: 52,
+  },
+  machineBadge: {
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 5,
+    borderWidth: 1,
+  },
+  machineBadgeDam: {
+    backgroundColor: colors.damSoft,
+    borderColor: colors.damBorder,
+  },
+  machineBadgeJoy: {
+    backgroundColor: colors.joySoft,
+    borderColor: colors.joyBorder,
+  },
+  machineBadgeText: {
+    fontFamily: fonts.monoMedium,
+    fontSize: 9,
+    fontWeight: '600',
+    letterSpacing: 0.5,
   },
   historyScore: {
     fontFamily: fonts.monoMedium,

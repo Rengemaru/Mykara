@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
-import { Stack } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useFonts } from 'expo-font';
@@ -15,6 +15,7 @@ import {
 import { initDatabase } from '../src/db/client';
 import { seedIfEmpty } from '../src/db/seed';
 import { MachineProvider } from '../src/contexts/MachineContext';
+import { isOnboardingCompleted } from '../src/lib/machine';
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -24,7 +25,6 @@ export default function RootLayout() {
     DMMono_500Medium,
   });
 
-  // Web uses mock data — no DB init needed. Native must finish init before rendering.
   const [dbReady, setDbReady] = useState(Platform.OS === 'web');
 
   useEffect(() => {
@@ -35,6 +35,13 @@ export default function RootLayout() {
       setDbReady(true);
     })();
   }, []);
+
+  useEffect(() => {
+    if (!dbReady || Platform.OS === 'web') return;
+    isOnboardingCompleted().then((done) => {
+      if (!done) router.replace('/onboarding');
+    });
+  }, [dbReady]);
 
   if (!fontsLoaded || !dbReady) {
     return <View style={styles.root} />;

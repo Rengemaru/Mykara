@@ -41,24 +41,24 @@ export const MOCK_SONGS: SongWithStats[] = [
 
 export const MOCK_SCORES: Record<number, ScoreRow[]> = {
   1: [
-    { id: 4, song_id: 1, score: 92.4, scored_at: '2026-05-10' },
-    { id: 3, song_id: 1, score: 89.2, scored_at: '2026-04-22' },
-    { id: 2, song_id: 1, score: 86.0, scored_at: '2026-04-05' },
-    { id: 1, song_id: 1, score: 83.5, scored_at: '2026-03-18' },
+    { id: 4, song_id: 1, score: 92.4, scored_at: '2026-05-10', machine: 'DAM' },
+    { id: 3, song_id: 1, score: 89.2, scored_at: '2026-04-22', machine: 'JOYSOUND' },
+    { id: 2, song_id: 1, score: 86.0, scored_at: '2026-04-05', machine: 'JOYSOUND' },
+    { id: 1, song_id: 1, score: 83.5, scored_at: '2026-03-18', machine: 'DAM' },
   ],
   2: [
-    { id: 6, song_id: 2, score: 89.1, scored_at: '2026-05-01' },
-    { id: 5, song_id: 2, score: 84.3, scored_at: '2026-04-10' },
+    { id: 6, song_id: 2, score: 89.1, scored_at: '2026-05-01', machine: 'DAM' },
+    { id: 5, song_id: 2, score: 84.3, scored_at: '2026-04-10', machine: 'DAM' },
   ],
   3: [
-    { id: 8, song_id: 3, score: 85.7, scored_at: '2026-05-20' },
-    { id: 7, song_id: 3, score: 80.2, scored_at: '2026-03-01' },
+    { id: 8, song_id: 3, score: 85.7, scored_at: '2026-05-20', machine: 'JOYSOUND' },
+    { id: 7, song_id: 3, score: 80.2, scored_at: '2026-03-01', machine: 'DAM' },
   ],
   4: [
-    { id: 9, song_id: 4, score: 88.3, scored_at: '2026-05-15' },
+    { id: 9, song_id: 4, score: 88.3, scored_at: '2026-05-15', machine: 'DAM' },
   ],
   5: [
-    { id: 11, song_id: 5, score: 83.2, scored_at: '2026-05-22' },
-    { id: 10, song_id: 5, score: 78.9, scored_at: '2026-04-15' },
+    { id: 11, song_id: 5, score: 83.2, scored_at: '2026-05-22', machine: 'JOYSOUND' },
+    { id: 10, song_id: 5, score: 78.9, scored_at: '2026-04-15', machine: 'DAM' },
   ],
 };

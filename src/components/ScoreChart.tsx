@@ -11,28 +11,44 @@ export function ScoreChart({ scores }: Props) {
   const { width: screenWidth } = useWindowDimensions();
 
   const chronological = [...scores].reverse();
-  const values = chronological.map((s) => s.score);
-  const minVal = Math.max(0, Math.floor(Math.min(...values)) - 5);
-  const maxVal = Math.min(100, Math.ceil(Math.max(...values)) + 5);
+  const damScores = chronological.filter((s) => s.machine === 'DAM');
+  const joyScores = chronological.filter((s) => s.machine === 'JOYSOUND');
 
-  const data = chronological.map((s) => ({
+  const hasDam = damScores.length > 0;
+  const hasJoy = joyScores.length > 0;
+
+  const allValues = chronological.map((s) => s.score);
+  const minVal = Math.max(0, Math.floor(Math.min(...allValues)) - 5);
+  const maxVal = Math.min(100, Math.ceil(Math.max(...allValues)) + 5);
+
+  const primaryScores = hasDam ? damScores : joyScores;
+  const primaryData = primaryScores.map((s) => ({
     value: s.score,
     label: s.scored_at.slice(5).replace('-', '/'),
   }));
+  const secondaryData = hasDam && hasJoy
+    ? joyScores.map((s) => ({ value: s.score }))
+    : undefined;
 
+  const primaryColor = hasDam ? colors.dam : colors.joy;
   const chartWidth = screenWidth - 36 - 60;
 
   return (
     <View style={styles.container}>
       <LineChart
-        data={data}
+        data={primaryData}
+        data2={secondaryData}
         width={chartWidth}
         height={80}
-        color={colors.accent}
+        color={primaryColor}
+        color2={colors.joy}
         thickness={2.5}
+        thickness2={2.5}
         curved
-        dataPointsColor={colors.accent}
+        dataPointsColor={primaryColor}
+        dataPointsColor2={colors.joy}
         dataPointsRadius={4}
+        dataPointsRadius2={4}
         maxValue={maxVal - minVal}
         yAxisOffset={minVal}
         noOfSections={3}

@@ -12,4 +12,10 @@ export const colors = {
   surface2:   '#eef0f6',
   border:     'rgba(0, 0, 0, 0.07)',
   white:      '#ffffff',
+  dam:        '#0066cc',
+  damSoft:    'rgba(0, 102, 204, 0.10)',
+  damBorder:  'rgba(0, 102, 204, 0.25)',
+  joy:        '#f97316',
+  joySoft:    'rgba(249, 115, 22, 0.10)',
+  joyBorder:  'rgba(249, 115, 22, 0.25)',
 } as const;

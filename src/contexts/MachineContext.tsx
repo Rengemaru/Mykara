@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { Platform } from 'react-native';
 import { getCurrentMachine, setSessionMachine, type Machine } from '../lib/machine';
 
 type MachineContextValue = {
@@ -13,12 +14,15 @@ export function MachineProvider({ children }: { children: React.ReactNode }) {
   const [currentMachine, setCurrentMachineState] = useState<Machine>('DAM');
 
   const refresh = useCallback(async () => {
+    if (Platform.OS === 'web') return;
     const m = await getCurrentMachine();
     setCurrentMachineState(m);
   }, []);
 
   const setCurrentMachine = useCallback(async (m: Machine) => {
-    await setSessionMachine(m);
+    if (Platform.OS !== 'web') {
+      await setSessionMachine(m);
+    }
     setCurrentMachineState(m);
   }, []);
 
