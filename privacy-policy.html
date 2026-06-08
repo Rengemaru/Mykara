@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>プライバシーポリシー — 歌帳</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Serif+JP:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: 15px;
+      line-height: 1.8;
+      color: #2d2d2d;
+      background: #f9f9f9;
+    }
+
+    header {
+      background: #4a3f8f;
+      color: #fff;
+      padding: 48px 24px 40px;
+      text-align: center;
+    }
+    header .app-name {
+      font-family: 'Noto Serif JP', serif;
+      font-size: 13px;
+      letter-spacing: 0.12em;
+      opacity: 0.85;
+      margin-bottom: 8px;
+    }
+    header h1 {
+      font-family: 'Noto Serif JP', serif;
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+
+    main {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+    }
+
+    .meta {
+      font-size: 13px;
+      color: #888;
+      text-align: right;
+      margin-bottom: 36px;
+    }
+
+    section {
+      margin-bottom: 40px;
+    }
+
+    h2 {
+      font-family: 'Noto Serif JP', serif;
+      font-size: 17px;
+      font-weight: 700;
+      color: #4a3f8f;
+      border-left: 4px solid #4a3f8f;
+      padding-left: 12px;
+      margin-bottom: 14px;
+    }
+
+    p {
+      margin-bottom: 12px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      font-size: 14px;
+    }
+    th {
+      background: #ece9f8;
+      color: #4a3f8f;
+      font-weight: 700;
+      padding: 10px 12px;
+      text-align: left;
+      border: 1px solid #d4ceee;
+    }
+    td {
+      padding: 10px 12px;
+      border: 1px solid #e0ddf0;
+      vertical-align: top;
+    }
+    tr:nth-child(even) td { background: #f6f5fc; }
+
+    .note {
+      font-size: 13px;
+      color: #666;
+      margin-top: 8px;
+    }
+
+    a { color: #4a3f8f; text-decoration: underline; }
+    a:hover { opacity: 0.75; }
+
+    footer {
+      background: #4a3f8f;
+      color: rgba(255,255,255,0.7);
+      text-align: center;
+      padding: 24px;
+      font-size: 13px;
+    }
+
+    @media (max-width: 600px) {
+      header h1 { font-size: 21px; }
+      main { padding: 28px 16px 60px; }
+      table { font-size: 13px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <p class="app-name">歌帳（うたちょう）</p>
+  <h1>プライバシーポリシー</h1>
+</header>
+
+<main>
+  <p class="meta">制定日：2026年5月31日 &nbsp;／&nbsp; 開発者：Rengemaru</p>
+
+  <!-- 1 -->
+  <section>
+    <h2>1. 基本方針</h2>
+    <p>
+      歌帳（以下「本アプリ」）は、ユーザーの氏名・メールアドレス・電話番号・住所などの
+      個人を特定できる情報を一切収集しません。
+      本アプリで扱うすべてのデータは、端末内にのみ保存されます。
+    </p>
+  </section>
+
+  <!-- 2 -->
+  <section>
+    <h2>2. 収集するデータ</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>データの種類</th>
+          <th>保存先</th>
+          <th>外部送信</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>登録した曲名・アーティスト名</td>
+          <td>端末内（ローカル）</td>
+          <td>なし</td>
+        </tr>
+        <tr>
+          <td>カラオケの点数・記録日・機種</td>
+          <td>端末内（ローカル）</td>
+          <td>なし</td>
+        </tr>
+        <tr>
+          <td>タブ名・設定値</td>
+          <td>端末内（ローカル）</td>
+          <td>なし</td>
+        </tr>
+        <tr>
+          <td>メモ・キー設定</td>
+          <td>端末内（ローカル）</td>
+          <td>なし</td>
+        </tr>
+        <tr>
+          <td>曲名補完のための検索キーワード</td>
+          <td>端末内には保存しない</td>
+          <td>あり ※</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="note">※ 曲名補完機能（iTunes検索）を利用した場合のみ。詳細は「3. 第三者サービス」をご覧ください。</p>
+  </section>
+
+  <!-- 3 -->
+  <section>
+    <h2>3. 第三者サービスについて</h2>
+    <p>本アプリは、曲名補完機能において以下の外部サービスを利用しています。</p>
+    <table>
+      <thead>
+        <tr>
+          <th>項目</th>
+          <th>内容</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>サービス名</td>
+          <td>iTunes Search API（Apple Inc.）</td>
+        </tr>
+        <tr>
+          <td>送信データ</td>
+          <td>検索キーワード（曲名・アーティスト名の一部）</td>
+        </tr>
+        <tr>
+          <td>送信タイミング</td>
+          <td>曲登録・編集画面で検索機能を使用したときのみ</td>
+        </tr>
+      </tbody>
+    </table>
+    <p style="margin-top:12px;">
+      Apple Inc. のプライバシーポリシーについては、
+      <a href="https://www.apple.com/legal/privacy/jp/" target="_blank" rel="noopener noreferrer">
+        https://www.apple.com/legal/privacy/jp/
+      </a> をご参照ください。
+    </p>
+  </section>
+
+  <!-- 4 -->
+  <section>
+    <h2>4. データの保存とバックアップ</h2>
+    <p>
+      本アプリに登録したすべてのデータは、ご利用の端末内にのみ保存されます。
+      開発者はユーザーのデータにアクセスすることはできません。
+    </p>
+    <p>
+      本アプリにはデータのバックアップ機能が含まれており、
+      JSONファイルとして任意の保存先に書き出すことができます。
+    </p>
+    <p>
+      本アプリをアンインストールすると、端末内に保存されたすべてのデータは削除されます。
+      定期的なバックアップを推奨します。
+    </p>
+  </section>
+
+  <!-- 5 -->
+  <section>
+    <h2>5. 広告について</h2>
+    <p>
+      本アプリには広告は表示されません。また、広告配信 SDK も使用していません。
+    </p>
+  </section>
+
+  <!-- 6 -->
+  <section>
+    <h2>6. 子どもの利用について</h2>
+    <p>
+      本アプリは年齢制限を設けていません。
+      個人情報を一切収集しないため、すべての年齢層が安全にご利用いただけます。
+    </p>
+  </section>
+
+  <!-- 7 -->
+  <section>
+    <h2>7. プライバシーポリシーの変更</h2>
+    <p>
+      本ポリシーの内容は、必要に応じて変更されることがあります。
+      変更が行われた場合は、本ページに最新版を公開します。
+      定期的にご確認いただくことをお勧めします。
+    </p>
+  </section>
+
+  <!-- 8 -->
+  <section>
+    <h2>8. お問い合わせ</h2>
+    <p>
+      本ポリシーに関するご質問・ご意見は、下記 GitHub リポジトリの Issues よりお問い合わせください。
+    </p>
+    <p>
+      <a href="https://github.com/Rengemaru/Utacho" target="_blank" rel="noopener noreferrer">
+        https://github.com/Rengemaru/Utacho
+      </a>
+    </p>
+  </section>
+</main>
+
+<footer>
+  &copy; 2026 Rengemaru. All rights reserved.
+</footer>
+
+</body>
+</html>
