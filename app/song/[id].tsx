@@ -3,7 +3,9 @@ import { useState } from 'react';
 import {
   Alert,
   FlatList,
+  Image,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -28,6 +30,7 @@ export default function SongDetailScreen() {
   const { song, scores, loading, error, reload } = useSongDetail(songId);
   const [sheetVisible, setSheetVisible] = useState(false);
   const [editingScore, setEditingScore] = useState<ScoreRow | null>(null);
+  const [artworkError, setArtworkError] = useState(false);
 
   function handleDeleteScore(score: ScoreRow) {
     Alert.alert(
@@ -102,6 +105,25 @@ export default function SongDetailScreen() {
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 120 }]}
         ListHeaderComponent={
           <View style={styles.listHeader}>
+            {/* アートワーク */}
+            <View style={styles.artHeader}>
+              <View style={styles.artBox}>
+                {song.artwork_url && !artworkError ? (
+                  <Image
+                    source={{ uri: song.artwork_url }}
+                    style={styles.artImage}
+                    onError={() => setArtworkError(true)}
+                  />
+                ) : (
+                  <Text style={styles.artEmoji}>🎵</Text>
+                )}
+              </View>
+              <View style={styles.artInfo}>
+                <Text style={styles.artTitle} numberOfLines={2}>{song.title}</Text>
+                <Text style={styles.artArtist} numberOfLines={1}>{song.artist || '—'}</Text>
+              </View>
+            </View>
+
             {/* 最高スコアカード */}
             <LinearGradient
               colors={['#ede9fe', '#f5f3ff']}
@@ -129,10 +151,36 @@ export default function SongDetailScreen() {
             {/* グラフ（スコアが2件以上あるとき表示） */}
             {scores.length >= 2 && (
               <View style={styles.chartSection}>
-                <Text style={styles.sectionLabel}>点数推移</Text>
+                <View style={styles.chartLabelRow}>
+                  <Text style={styles.sectionLabel}>点数推移</Text>
+                  <View style={styles.legend}>
+                    {scores.some((s) => s.machine === 'DAM') && (
+                      <View style={styles.legendItem}>
+                        <View style={[styles.legendDot, { backgroundColor: colors.dam }]} />
+                        <Text style={styles.legendLabel}>DAM</Text>
+                      </View>
+                    )}
+                    {scores.some((s) => s.machine === 'JOYSOUND') && (
+                      <View style={styles.legendItem}>
+                        <View style={[styles.legendDot, { backgroundColor: colors.joy }]} />
+                        <Text style={styles.legendLabel}>JOYSOUND</Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
                 <ScoreChart scores={scores} />
               </View>
             )}
+
+            {/* メモ */}
+            {song.memo ? (
+              <View style={styles.memoCard}>
+                <Text style={styles.memoLabel}>メモ</Text>
+                <ScrollView scrollEnabled={false}>
+                  <Text style={styles.memoText}>{song.memo}</Text>
+                </ScrollView>
+              </View>
+            ) : null}
 
             {/* 履歴セクションラベル */}
             {scores.length > 0 && (
@@ -216,6 +264,17 @@ function HistoryRow({ score, onEdit, onDelete }: HistoryRowProps) {
     >
       <View style={styles.historyRow}>
         <Text style={styles.historyDate}>{score.scored_at}</Text>
+        <View style={[
+          styles.machineBadge,
+          score.machine === 'DAM' ? styles.machineBadgeDam : styles.machineBadgeJoy,
+        ]}>
+          <Text style={[
+            styles.machineBadgeText,
+            { color: score.machine === 'DAM' ? colors.dam : colors.joy },
+          ]}>
+            {score.machine === 'DAM' ? 'DAM' : 'JOY'}
+          </Text>
+        </View>
         <Text style={styles.historyScore}>{score.score.toFixed(1)}</Text>
       </View>
     </Swipeable>
@@ -272,6 +331,46 @@ const styles = StyleSheet.create({
     gap: 13,
     paddingBottom: 8,
   },
+  artHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 13,
+  },
+  artBox: {
+    width: 64,
+    height: 64,
+    borderRadius: 13,
+    backgroundColor: colors.surface2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 2,
+  },
+  artImage: {
+    width: 64,
+    height: 64,
+  },
+  artEmoji: {
+    fontSize: 28,
+  },
+  artInfo: {
+    flex: 1,
+  },
+  artTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  artArtist: {
+    fontSize: 11,
+    color: colors.text2,
+    marginTop: 3,
+  },
   bestCard: {
     borderWidth: 1.5,
     borderColor: 'rgba(91, 76, 245, 0.15)',
@@ -306,11 +405,54 @@ const styles = StyleSheet.create({
   chartSection: {
     gap: 6,
   },
+  chartLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  legend: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  legendDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  legendLabel: {
+    fontSize: 9,
+    fontWeight: '500',
+    color: colors.text2,
+  },
   sectionLabel: {
     fontSize: 10,
     color: colors.text2,
     letterSpacing: 0.8,
     fontWeight: '500',
+  },
+  memoCard: {
+    backgroundColor: colors.surface,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    borderRadius: 12,
+    padding: 12,
+    gap: 4,
+  },
+  memoLabel: {
+    fontSize: 10,
+    color: colors.text2,
+    letterSpacing: 0.8,
+    fontWeight: '500',
+  },
+  memoText: {
+    fontSize: 13,
+    color: colors.text,
+    lineHeight: 20,
   },
   historyRow: {
     flexDirection: 'row',
@@ -325,6 +467,26 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: colors.text3,
     width: 52,
+  },
+  machineBadge: {
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 5,
+    borderWidth: 1,
+  },
+  machineBadgeDam: {
+    backgroundColor: colors.damSoft,
+    borderColor: colors.damBorder,
+  },
+  machineBadgeJoy: {
+    backgroundColor: colors.joySoft,
+    borderColor: colors.joyBorder,
+  },
+  machineBadgeText: {
+    fontFamily: fonts.monoMedium,
+    fontSize: 9,
+    fontWeight: '600',
+    letterSpacing: 0.5,
   },
   historyScore: {
     fontFamily: fonts.monoMedium,

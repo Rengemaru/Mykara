@@ -13,7 +13,7 @@ export function useMusicSearch(query: string, debounceMs = 300, attribute?: stri
     if (timerRef.current) clearTimeout(timerRef.current);
     if (abortRef.current) abortRef.current.abort();
 
-    if (pausedRef.current || query.trim().length < 2) {
+    if (pausedRef.current || query.trim().length < 1) {
       setSuggestions([]);
       setIsSearching(false);
       return;

@@ -1,12 +1,38 @@
-import { router } from 'expo-router';
-import { Alert, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
+import { Alert, ActivityIndicator, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../src/constants/colors';
 import { fonts } from '../../src/constants/fonts';
 import { getDb } from '../../src/db/client';
+import { getDefaultMachine, type Machine } from '../../src/lib/machine';
+import { exportBackup } from '../../src/lib/backup';
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
+  const [defaultMachine, setDefaultMachineState] = useState<Machine>('DAM');
+  const [isExporting, setIsExporting] = useState(false);
+
+  useFocusEffect(useCallback(() => {
+    if (Platform.OS === 'web') return;
+    getDefaultMachine().then(setDefaultMachineState);
+  }, []));
+
+  async function handleExportBackup() {
+    if (Platform.OS === 'web') {
+      Alert.alert('非対応', 'バックアップはモバイル端末でのみ使用できます');
+      return;
+    }
+    try {
+      setIsExporting(true);
+      await exportBackup();
+    } catch (e) {
+      console.error(e);
+      Alert.alert('エラー', 'バックアップの書き出しに失敗しました');
+    } finally {
+      setIsExporting(false);
+    }
+  }
 
   function handleDeleteAll() {
     Alert.alert(
@@ -53,10 +79,7 @@ export default function SettingsScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>タブ管理</Text>
           <View style={styles.group}>
-            <TouchableOpacity
-              style={styles.row}
-              onPress={() => router.push('/tabs')}
-            >
+            <TouchableOpacity style={styles.row} onPress={() => router.push('/tabs')}>
               <View style={[styles.rowIcon, styles.iconPurple]}>
                 <Text style={styles.rowEmoji}>🗂</Text>
               </View>
@@ -69,11 +92,54 @@ export default function SettingsScreen() {
           </View>
         </View>
 
+        {/* カラオケ機種 */}
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>カラオケ機種</Text>
+          <View style={styles.group}>
+            <TouchableOpacity
+              style={[styles.row, styles.rowNoBorder]}
+              onPress={() => router.push('/settings/machine')}
+            >
+              <View style={[styles.rowIcon, styles.iconDam]}>
+                <Text style={styles.rowEmoji}>🎤</Text>
+              </View>
+              <View style={styles.rowText}>
+                <Text style={styles.rowLabel}>デフォルト機種</Text>
+                <Text style={styles.rowSub}>点数記録時にプリセットされる機種</Text>
+              </View>
+              <Text style={[
+                styles.rowValue,
+                { color: defaultMachine === 'DAM' ? colors.dam : colors.joy },
+              ]}>
+                {defaultMachine}
+              </Text>
+              <Text style={styles.rowChevron}>›</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
         {/* データ管理 */}
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>データ管理</Text>
           <View style={styles.group}>
-            <TouchableOpacity style={styles.row} onPress={handleDeleteAll}>
+            <TouchableOpacity
+              style={styles.row}
+              onPress={handleExportBackup}
+              disabled={isExporting}
+            >
+              <View style={[styles.rowIcon, styles.iconPurple]}>
+                <Text style={styles.rowEmoji}>💾</Text>
+              </View>
+              <View style={styles.rowText}>
+                <Text style={styles.rowLabel}>バックアップを書き出す</Text>
+                <Text style={styles.rowSub}>全データをJSONファイルで書き出す</Text>
+              </View>
+              {isExporting
+                ? <ActivityIndicator size="small" color={colors.accent} />
+                : <Text style={styles.rowChevron}>›</Text>
+              }
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.row, styles.rowNoBorder]} onPress={handleDeleteAll}>
               <View style={[styles.rowIcon, styles.iconRed]}>
                 <Text style={styles.rowEmoji}>🗑</Text>
               </View>
@@ -180,6 +246,7 @@ const styles = StyleSheet.create({
   iconPurple: { backgroundColor: colors.accentSoft },
   iconRed: { backgroundColor: 'rgba(239, 68, 68, 0.1)' },
   iconGray: { backgroundColor: colors.surface2 },
+  iconDam: { backgroundColor: colors.damSoft },
   rowEmoji: { fontSize: 15 },
   rowText: { flex: 1 },
   rowLabel: {

@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>歌帳 ワイヤーフレーム v5</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Plus+Jakarta+Sans:wght@600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg-page: #f0f2f7; --bg-phone: #ffffff; --surface: #f7f8fc; --surface2: #eef0f6;
+  --border: rgba(0,0,0,0.07); --accent: #5b4cf5; --accent-soft: rgba(91,76,245,0.1);
+  --green: #00b96b; --yellow: #f59e0b; --text: #111827; --text2: #6b7280; --text3: #9ca3af;
+  --shadow: 0 2px 12px rgba(0,0,0,0.06);
+  --dam: #0066cc; --dam-soft: rgba(0,102,204,0.1); --dam-border: rgba(0,102,204,0.25);
+  --joy: #f97316; --joy-soft: rgba(249,115,22,0.1); --joy-border: rgba(249,115,22,0.25);
+}
+body { font-family:'Noto Sans JP',sans-serif; background:var(--bg-page); color:var(--text); min-height:100vh; padding:60px 24px 80px; }
+.page-header { text-align:center; margin-bottom:40px; }
+.page-header .eyebrow { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.22em; color:var(--text3); text-transform:uppercase; margin-bottom:10px; }
+.page-header h1 { font-family:'Plus Jakarta Sans',sans-serif; font-size:24px; font-weight:800; letter-spacing:-0.02em; color:var(--text); }
+.page-header h1 span { color:var(--accent); }
+.badge { display:inline-block; margin-top:10px; font-size:10px; font-family:'DM Mono',monospace; background:var(--accent-soft); color:var(--accent); padding:4px 10px; border-radius:20px; letter-spacing:0.1em; }
+.section-divider { max-width:1400px; margin:48px auto 24px; padding:0 12px; font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.18em; color:var(--text3); text-transform:uppercase; border-top:1px dashed var(--border); padding-top:24px; }
+.grid { display:flex; flex-wrap:wrap; gap:32px; justify-content:center; max-width:1400px; margin:0 auto; }
+.screen-wrap { display:flex; flex-direction:column; align-items:center; gap:14px; }
+.screen-label { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:0.18em; color:var(--text3); text-transform:uppercase; text-align:center; }
+.screen-label .tag-new { background:#ef4444; color:#fff; padding:2px 6px; border-radius:4px; margin-left:6px; letter-spacing:0.1em; }
+.screen-label .tag-change { background:var(--accent); color:#fff; padding:2px 6px; border-radius:4px; margin-left:6px; letter-spacing:0.1em; }
+.phone { width:300px; height:648px; background:var(--bg-phone); border-radius:44px; border:1.5px solid rgba(0,0,0,0.1); overflow:hidden; position:relative; box-shadow:0 0 0 6px #e4e6ed,0 24px 48px rgba(0,0,0,0.12); }
+.island { position:absolute; top:12px; left:50%; transform:translateX(-50%); width:86px; height:26px; background:#111; border-radius:20px; z-index:10; }
+.status-bar { display:flex; justify-content:space-between; align-items:center; padding:48px 20px 6px; font-size:11px; color:var(--text2); }
+.status-bar .time { font-family:'DM Mono',monospace; font-size:13px; font-weight:500; color:var(--text); }
+.status-icons { display:flex; gap:4px; font-size:10px; }
+.screen-content { height:calc(100% - 78px); display:flex; flex-direction:column; overflow:hidden; }
+.bottom-nav { display:flex; justify-content:space-around; align-items:center; padding:10px 0 16px; border-top:1px solid var(--border); background:rgba(255,255,255,0.97); position:absolute; bottom:0; left:0; right:0; }
+.nav-item { display:flex; flex-direction:column; align-items:center; gap:3px; font-size:9px; color:var(--text3); font-weight:500; }
+.nav-item.active { color:var(--accent); }
+.nav-icon { font-size:17px; line-height:1; }
+.s1 .page-title-row { display:flex; justify-content:space-between; align-items:center; padding:8px 18px 10px; }
+.s1 .app-title { font-family:'Plus Jakarta Sans',sans-serif; font-size:22px; font-weight:800; letter-spacing:-0.02em; }
+.s1 .app-title span { color:var(--accent); }
+.add-btn { width:34px; height:34px; background:var(--accent); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:20px; color:#fff; box-shadow:0 4px 12px rgba(91,76,245,0.3); }
+.tab-row { display:flex; gap:6px; padding:0 18px 10px; overflow-x:auto; }
+.tab-row::-webkit-scrollbar{display:none}
+.tab-pill { padding:5px 12px; border-radius:20px; font-size:11px; font-weight:500; white-space:nowrap; background:var(--surface2); color:var(--text2); border:1.5px solid transparent; }
+.tab-pill.active { background:var(--accent-soft); color:var(--accent); border-color:rgba(91,76,245,0.2); }
+.search-bar { margin:0 18px 10px; background:var(--surface); border:1.5px solid var(--border); border-radius:12px; padding:9px 14px; display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text3); }
+.song-list { flex:1; overflow-y:auto; padding:0 18px 80px; display:flex; flex-direction:column; gap:7px; }
+.song-list::-webkit-scrollbar{display:none}
+.song-card { background:#fff; border:1.5px solid var(--border); border-radius:14px; padding:11px 13px; display:flex; align-items:center; gap:11px; box-shadow:var(--shadow); }
+.song-art { width:40px; height:40px; border-radius:10px; background:var(--surface2); display:flex; align-items:center; justify-content:center; font-size:17px; flex-shrink:0; }
+.song-info { flex:1; min-width:0; }
+.song-title { font-size:13px; font-weight:600; margin-bottom:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.song-artist { font-size:11px; color:var(--text2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.card-right { display:flex; align-items:center; gap:7px; flex-shrink:0; }
+.key-badge { font-family:'DM Mono',monospace; font-size:11px; font-weight:500; color:var(--text2); background:var(--surface2); border:1.5px solid var(--border); border-radius:6px; padding:2px 6px; min-width:28px; text-align:center; }
+.key-badge.positive { color:#00b96b; background:rgba(0,185,107,0.08); border-color:rgba(0,185,107,0.2); }
+.key-badge.negative { color:#f59e0b; background:rgba(245,158,11,0.08); border-color:rgba(245,158,11,0.2); }
+.score-badge { font-family:'DM Mono',monospace; font-size:14px; font-weight:500; color:var(--accent); }
+.record-icon-btn { width:30px; height:30px; background:var(--accent-soft); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; border:1.5px solid rgba(91,76,245,0.2); }
+.key-stepper { display:flex; align-items:center; gap:8px; }
+.key-stepper-btn { width:32px; height:32px; border-radius:9px; background:var(--surface2); border:1.5px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:18px; color:var(--text); font-weight:500; }
+.key-stepper-val { font-family:'DM Mono',monospace; font-size:18px; font-weight:600; color:var(--accent); min-width:36px; text-align:center; }
+.swipe-row { position:relative; border-radius:14px; overflow:hidden; }
+.swipe-card { background:#fff; border:1.5px solid var(--border); border-radius:14px; padding:11px 13px; display:flex; align-items:center; gap:11px; box-shadow:var(--shadow); position:relative; transform:translateX(-88px); z-index:1; }
+.swipe-actions { position:absolute; right:0; top:0; bottom:0; display:flex; align-items:stretch; border-radius:0 14px 14px 0; overflow:hidden; }
+.swipe-btn { width:44px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; font-size:10px; font-weight:600; }
+.swipe-btn.edit { background:#5b4cf5; color:#fff; }
+.swipe-btn.delete { background:#ef4444; color:#fff; }
+.swipe-btn-icon { font-size:15px; line-height:1; }
+.history-swipe-row { position:relative; overflow:hidden; }
+.history-swipe-inner { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); transform:translateX(-96px); position:relative; z-index:1; }
+.history-swipe-actions { position:absolute; right:0; top:0; bottom:0; display:flex; align-items:stretch; gap:1px; }
+.history-edit-btn { width:52px; background:#5b4cf5; display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:600; color:#fff; gap:2px; flex-direction:column; }
+.history-del-btn { width:44px; background:#ef4444; display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:600; color:#fff; gap:2px; flex-direction:column; border-radius:0 4px 4px 0; }
+.history-del-icon { font-size:12px; }
+.history-edit-icon { font-size:12px; }
+.s2 .detail-header { display:flex; align-items:center; gap:10px; padding:6px 18px 12px; }
+.back-btn { font-size:22px; color:var(--accent); }
+.detail-song-title { font-size:15px; font-weight:700; }
+.detail-artist { font-size:11px; color:var(--text2); margin-top:1px; }
+.detail-scroll { flex:1; overflow-y:auto; padding:0 18px 110px; display:flex; flex-direction:column; gap:13px; }
+.detail-scroll::-webkit-scrollbar{display:none}
+.detail-art-header { display:flex; align-items:center; gap:13px; }
+.detail-art-img { width:64px; height:64px; border-radius:13px; background:var(--surface2); display:flex; align-items:center; justify-content:center; font-size:28px; flex-shrink:0; box-shadow:var(--shadow); }
+.best-card { background:linear-gradient(135deg,#ede9fe,#f5f3ff); border:1.5px solid rgba(91,76,245,0.15); border-radius:16px; padding:15px; display:flex; justify-content:space-between; align-items:center; }
+.best-card .label { font-size:10px; color:var(--text2); letter-spacing:0.08em; margin-bottom:4px; }
+.best-card .value { font-family:'Plus Jakarta Sans',sans-serif; font-size:34px; font-weight:800; color:var(--accent); line-height:1; }
+.best-card .sub { font-size:11px; color:var(--green); margin-top:3px; }
+.best-card .count { font-family:'DM Mono',monospace; font-size:22px; font-weight:500; text-align:right; }
+.section-label { font-size:10px; color:var(--text2); letter-spacing:0.08em; margin-bottom:6px; font-weight:500; display:flex; align-items:center; justify-content:space-between; }
+.chart-legend { display:flex; gap:8px; }
+.legend-item { display:flex; align-items:center; gap:3px; font-size:9px; font-weight:500; }
+.legend-dot { width:8px; height:8px; border-radius:50%; }
+.legend-dot.dam { background:var(--dam); }
+.legend-dot.joy { background:var(--joy); }
+.legend-label { color:var(--text2); }
+.chart-area { background:var(--surface); border:1.5px solid var(--border); border-radius:12px; padding:10px; height:90px; }
+.chart-svg { width:100%; height:100%; }
+.history-item { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); }
+.history-item:last-child{border-bottom:none}
+.history-date { font-size:11px; color:var(--text3); width:46px; flex-shrink:0; }
+.history-score { font-family:'DM Mono',monospace; font-size:14px; font-weight:500; flex:1; color:var(--accent); }
+.history-score.mid{color:var(--yellow)}
+.machine-badge { font-family:'DM Mono',monospace; font-size:9px; font-weight:600; padding:3px 7px; border-radius:5px; letter-spacing:0.05em; flex-shrink:0; }
+.machine-badge.dam { background:var(--dam-soft); color:var(--dam); border:1px solid var(--dam-border); }
+.machine-badge.joy { background:var(--joy-soft); color:var(--joy); border:1px solid var(--joy-border); }
+.record-btn-wrap { position:absolute; bottom:58px; left:18px; right:18px; }
+.record-btn { padding:13px; background:var(--accent); border-radius:13px; text-align:center; font-size:14px; font-weight:700; color:#fff; box-shadow:0 6px 18px rgba(91,76,245,0.3); display:flex; align-items:center; justify-content:center; gap:6px; }
+.overlay { position:absolute; inset:0; background:rgba(0,0,0,0.38); z-index:5; border-radius:44px; }
+.bottom-sheet { position:absolute; bottom:0; left:0; right:0; background:#fff; border-radius:24px 24px 0 0; z-index:10; padding:0 18px 20px; box-shadow:0 -8px 32px rgba(0,0,0,0.12); }
+.sheet-handle { width:36px; height:4px; background:var(--border); border-radius:2px; margin:12px auto 14px; }
+.sheet-title { font-family:'Plus Jakarta Sans',sans-serif; font-size:15px; font-weight:700; margin-bottom:2px; }
+.sheet-subtitle { font-size:11px; color:var(--text2); margin-bottom:13px; }
+.score-display { background:var(--surface); border:2px solid var(--accent); border-radius:12px; padding:9px 14px; display:flex; align-items:baseline; gap:4px; margin-bottom:9px; box-shadow:0 0 0 3px rgba(91,76,245,0.08); }
+.score-display .num { font-family:'Plus Jakarta Sans',sans-serif; font-size:28px; font-weight:800; color:var(--accent); letter-spacing:-0.02em; }
+.score-display .unit { font-size:12px; color:var(--text2); }
+.machine-toggle-row { display:flex; align-items:center; gap:6px; margin-bottom:6px; }
+.machine-toggle-label { font-size:10px; color:var(--text2); font-weight:500; letter-spacing:0.05em; min-width:32px; }
+.machine-toggle { display:flex; gap:4px; flex:1; }
+.machine-toggle-btn { flex:1; padding:6px 8px; border-radius:9px; border:1.5px solid var(--border); background:var(--surface); display:flex; align-items:center; justify-content:center; gap:4px; font-size:11px; font-weight:600; color:var(--text2); }
+.machine-toggle-btn.selected.dam { background:var(--dam-soft); color:var(--dam); border-color:var(--dam-border); }
+.machine-toggle-btn.selected.joy { background:var(--joy-soft); color:var(--joy); border-color:var(--joy-border); }
+.machine-dot { width:7px; height:7px; border-radius:50%; }
+.machine-dot.dam { background:var(--dam); }
+.machine-dot.joy { background:var(--joy); }
+.session-hint { font-size:9px; color:var(--text3); margin-bottom:9px; padding-left:2px; }
+.numpad { display:grid; grid-template-columns:repeat(3,1fr); gap:5px; margin-bottom:9px; }
+.num-key { height:32px; background:var(--surface); border:1.5px solid var(--border); border-radius:10px; display:flex; align-items:center; justify-content:center; font-family:'DM Mono',monospace; font-size:15px; color:var(--text); }
+.num-key.del { font-size:12px; color:var(--text2); }
+.date-row { display:flex; align-items:center; gap:6px; font-size:11px; color:var(--text2); margin-bottom:9px; }
+.date-val { font-family:'DM Mono',monospace; font-size:11px; background:var(--surface); border:1.5px solid var(--border); border-radius:8px; padding:4px 8px; }
+.save-score-btn { padding:12px; background:var(--accent); border-radius:12px; text-align:center; font-size:13px; font-weight:700; color:#fff; box-shadow:0 4px 14px rgba(91,76,245,0.3); }
+.s5 .settings-header { padding:8px 18px 16px; }
+.s5 .settings-title { font-family:'Plus Jakarta Sans',sans-serif; font-size:20px; font-weight:800; letter-spacing:-0.01em; }
+.settings-scroll { flex:1; overflow-y:auto; padding:0 18px 80px; display:flex; flex-direction:column; gap:20px; }
+.settings-scroll::-webkit-scrollbar{display:none}
+.settings-section-label { font-size:10px; color:var(--text3); font-weight:600; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:6px; padding-left:2px; }
+.settings-group { background:#fff; border:1.5px solid var(--border); border-radius:14px; overflow:hidden; box-shadow:var(--shadow); }
+.settings-row { display:flex; align-items:center; gap:12px; padding:12px 14px; border-bottom:1px solid var(--border); }
+.settings-row:last-child { border-bottom:none; }
+.settings-row-icon { width:32px; height:32px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; }
+.icon-purple { background:var(--accent-soft); } .icon-red { background:rgba(239,68,68,0.1); } .icon-gray { background:var(--surface2); }
+.icon-dam { background:var(--dam-soft); color:var(--dam); }
+.settings-row-text { flex:1; }
+.settings-row-label { font-size:13px; font-weight:500; color:var(--text); }
+.settings-row-sub { font-size:10px; color:var(--text3); margin-top:1px; }
+.settings-row-right { font-size:18px; color:var(--text3); }
+.settings-row-value { font-size:11px; color:var(--accent); font-weight:500; margin-right:4px; }
+.settings-row-value.dam { color:var(--dam); }
+.danger-label { font-size:13px; font-weight:500; color:#ef4444; }
+.s4 .reg-header { display:flex; align-items:center; gap:10px; padding:6px 18px 16px; }
+.close-btn { font-size:18px; color:var(--text2); }
+.reg-title { font-family:'Plus Jakarta Sans',sans-serif; font-size:16px; font-weight:700; flex:1; }
+.reg-form { flex:1; padding:0 18px 100px; overflow-y:auto; display:flex; flex-direction:column; gap:16px; }
+.reg-form::-webkit-scrollbar{display:none}
+.field-group { display:flex; flex-direction:column; gap:5px; }
+.field-label { font-size:11px; color:var(--text2); font-weight:500; letter-spacing:0.05em; }
+.field-input { background:var(--surface); border:1.5px solid var(--border); border-radius:11px; padding:11px 13px; font-size:13px; color:var(--text); }
+.field-input.focused { border-color:var(--accent); background:#fff; box-shadow:0 0 0 3px rgba(91,76,245,0.08); }
+.field-input.filled { background:#fff; }
+.suggest-list { background:#fff; border:1.5px solid var(--border); border-radius:11px; overflow:hidden; box-shadow:0 4px 16px rgba(0,0,0,0.08); }
+.suggest-item { display:flex; align-items:center; gap:10px; padding:9px 12px; border-bottom:1px solid var(--border); font-size:12px; }
+.suggest-item:last-child{border-bottom:none}
+.suggest-thumb { width:30px; height:30px; border-radius:7px; background:var(--surface2); display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
+.suggest-text .st { font-weight:500; font-size:12px; } .suggest-text .sa { font-size:10px; color:var(--text2); margin-top:1px; }
+.tab-selector { display:flex; flex-wrap:wrap; gap:6px; }
+.tab-option { padding:6px 12px; border-radius:10px; font-size:11px; font-weight:500; border:1.5px solid var(--border); background:var(--surface); color:var(--text2); }
+.tab-option.selected { background:var(--accent-soft); color:var(--accent); border-color:rgba(91,76,245,0.25); }
+.tab-option.add { background:transparent; border-style:dashed; color:var(--text3); }
+.save-btn { position:absolute; bottom:24px; left:18px; right:18px; padding:14px; background:var(--accent); border-radius:13px; text-align:center; font-size:14px; font-weight:700; color:#fff; box-shadow:0 6px 18px rgba(91,76,245,0.3); }
+.machine-list { padding:0 18px; display:flex; flex-direction:column; gap:10px; }
+.machine-card { background:#fff; border:1.5px solid var(--border); border-radius:14px; padding:14px; display:flex; align-items:center; gap:12px; box-shadow:var(--shadow); }
+.machine-card.selected.dam { border-color:var(--dam); background:var(--dam-soft); }
+.machine-card.selected.joy { border-color:var(--joy); background:var(--joy-soft); }
+.machine-card-icon { width:40px; height:40px; border-radius:11px; display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:700; font-family:'Plus Jakarta Sans',sans-serif; }
+.machine-card-icon.dam { background:var(--dam-soft); color:var(--dam); }
+.machine-card-icon.joy { background:var(--joy-soft); color:var(--joy); }
+.machine-card-text { flex:1; }
+.machine-card-name { font-size:14px; font-weight:600; }
+.machine-card-desc { font-size:10px; color:var(--text2); margin-top:2px; }
+.machine-card-check { width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; color:#fff; }
+.machine-card-check.dam { background:var(--dam); }
+.machine-card-check.joy { background:var(--joy); }
+.machine-card-check.unchecked { background:transparent; border:1.5px solid var(--border); }
+.session-note { margin:18px; padding:12px; background:var(--surface); border:1.5px dashed var(--border); border-radius:11px; font-size:11px; color:var(--text2); line-height:1.5; }
+.session-note .note-title { font-weight:600; color:var(--text); margin-bottom:4px; display:flex; align-items:center; gap:6px; }
+.s6 .machine-header { display:flex; align-items:center; gap:10px; padding:6px 18px 16px; }
+.s6 .machine-title { font-family:'Plus Jakarta Sans',sans-serif; font-size:16px; font-weight:700; }
+.s6 .machine-sub { font-size:10px; color:var(--text2); margin-top:2px; }
+</style>
+</head>
+<body>
+<div class="page-header">
+  <div class="eyebrow">Wireframe v5 · iOS/Android App · 歌帳</div>
+  <h1><span>歌帳</span> 画面設計</h1>
+  <div class="badge">LIGHT THEME · 9 SCREENS · MACHINE SELECT · MULTI-SERIES CHART · ONBOARDING</div>
+</div>
+
+<div class="section-divider">A · メイン画面（ホーム・詳細）</div>
+<div class="grid">
+
+  <!-- 01 HOME -->
+  <div class="screen-wrap">
+    <div class="screen-label">01 · ホーム（曲一覧）</div>
+    <div class="phone">
+      <div class="island"></div>
+      <div class="status-bar"><span class="time">9:41</span><div class="status-icons"><span>●●● WiFi 🔋</span></div></div>
+      <div class="screen-content s1">
+        <div class="page-title-row"><div class="app-title">歌帳</div><div class="add-btn">＋</div></div>
+        <div class="tab-row"><div class="tab-pill active">すべて</div><div class="tab-pill">十八番</div><div class="tab-pill">練習中</div><div class="tab-pill">アニソン</div></div>
+        <div class="search-bar"><span>🔍</span><span>曲名・アーティスト名で検索</span></div>
+        <div class="song-list">
+          <div class="song-card"><div class="song-art">🎵</div><div class="song-info"><div class="song-title">ガーネット</div><div class="song-artist">奥華子</div></div><div class="card-right"><div class="key-badge positive">+1</div><div class="score-badge">92.4</div><div class="record-icon-btn">✏️</div></div></div>
+          <div class="song-card"><div class="song-art">🎶</div><div class="song-info"><div class="song-title">Lemon</div><div class="song-artist">米津玄師</div></div><div class="card-right"><div class="key-badge negative">-3</div><div class="score-badge">89.1</div><div class="record-icon-btn">✏️</div></div></div>
+          <div class="song-card"><div class="song-art">🎤</div><div class="song-info"><div class="song-title">夜に駆ける</div><div class="song-artist">YOASOBI</div></div><div class="card-right"><div class="key-badge positive">+2</div><div class="score-badge">85.7</div><div class="record-icon-btn">✏️</div></div></div>
+          <div class="song-card"><div class="song-art">🎼</div><div class="song-info"><div class="song-title">カタオモイ（Album Ver.）</div><div class="song-artist">Aimer</div></div><div class="card-right"><div class="key-badge" style="visibility:hidden">+0</div><div class="score-badge">88.3</div><div class="record-icon-btn">✏️</div></div></div>
+          <div class="song-card"><div class="song-art">🎸</div><div class="song-info"><div class="song-title">炎〜ほのお〜 / 劇場版鬼滅の刃主題歌</div><div class="song-artist">LiSA & 梶浦由記</div></div><div class="card-right"><div class="key-badge negative">-1</div><div class="score-badge">83.2</div><div class="record-icon-btn">✏️</div></div></div>
+        </div>
+      </div>
+      <div class="bottom-nav"><div class="nav-item active"><div class="nav-icon">♪</div><div>曲一覧</div></div><div class="nav-item"><div class="nav-icon">⚙️</div><div>設定</div></div></div>
+    </div>
+  </div>
+
+  <!-- 01b HOME SWIPE -->
+  <div class="screen-wrap">
+    <div class="screen-label">01b · 曲カード 左スワイプ</div>
+    <div class="phone">
+      <div class="island"></div>
+      <div class="status-bar"><span class="time">9:41</span><div class="status-icons"><span>●●● WiFi 🔋</span></div></div>
+      <div class="screen-content s1">
+        <div class="page-title-row"><div class="app-title">歌帳</div><div class="add-btn">＋</div></div>
+        <div class="tab-row"><div class="tab-pill active">すべて</div><div class="tab-pill">十八番</div><div class="tab-pill">練習中</div><div class="tab-pill">アニソン</div></div>
+        <div class="search-bar"><span>🔍</span><span>曲名・アーティスト名で検索</span></div>
+        <div class="song-list">
+          <div class="song-card"><div class="song-art">🎵</div><div class="song-info"><div class="song-title">ガーネット</div><div class="song-artist">奥華子</div></div><div class="card-right"><div class="key-badge positive">+1</div><div class="score-badge">92.4</div><div class="record-icon-btn">✏️</div></div></div>
+          <div class="swipe-row">
+            <div class="swipe-card"><div class="song-art">🎶</div><div class="song-info"><div class="song-title">Lemon</div><div class="song-artist">米津玄師</div></div><div class="card-right"><div class="key-badge negative">-3</div><div class="score-badge">89.1</div><div class="record-icon-btn">✏️</div></div></div>
+            <div class="swipe-actions"><div class="swipe-btn edit"><div class="swipe-btn-icon">✏️</div>編集</div><div class="swipe-btn delete"><div class="swipe-btn-icon">🗑</div>削除</div></div>
+          </div>
+          <div class="song-card"><div class="song-art">🎤</div><div class="song-info"><div class="song-title">夜に駆ける</div><div class="song-artist">YOASOBI</div></div><div class="card-right"><div class="key-badge positive">+2</div><div class="score-badge">85.7</div><div class="record-icon-btn">✏️</div></div></div>
+          <div class="song-card"><div class="song-art">🎼</div><div class="song-info"><div class="song-title">カタオモイ（Album Ver.）</div><div class="song-artist">Aimer</div></div><div class="card-right"><div class="key-badge" style="visibility:hidden">+0</div><div class="score-badge">88.3</div><div class="record-icon-btn">✏️</div></div></div>
+        </div>
+      </div>
+      <div class="bottom-nav"><div class="nav-item active"><div class="nav-icon">♪</div><div>曲一覧</div></div><div class="nav-item"><div class="nav-icon">⚙️</div><div>設定</div></div></div>
+    </div>
+  </div>
+
+  <!-- 02 DETAIL -->
+  <div class="screen-wrap">
+    <div class="screen-label">02 · 曲詳細 [CHANGE]</div>
+    <div class="phone">
+      <div class="island"></div>
+      <div class="status-bar"><span class="time">9:41</span><div class="status-icons"><span>●●● WiFi 🔋</span></div></div>
+      <div class="screen-content s2">
+        <div class="detail-header"><div class="back-btn">‹</div><div><div class="detail-song-title">ガーネット</div><div class="detail-artist">奥華子</div></div></div>
+        <div class="detail-scroll">
+          <div class="detail-art-header">
+            <div class="detail-art-img">🎵</div>
+            <div><div class="section-label" style="margin:0;">iTunesアートワーク表示エリア</div><div style="font-size:10px;color:var(--text3);margin-top:3px;">artwork_urlがあれば画像、なければ🎵</div></div>
+          </div>
+          <div class="best-card"><div><div class="label">最高スコア</div><div class="value">92.4</div><div class="sub">↑ 3.2pt 前回比</div></div><div><div class="label">記録回数</div><div class="count">8回</div></div></div>
+          <div>
+            <div class="section-label">
+              <span>点数推移</span>
+              <div class="chart-legend">
+                <div class="legend-item"><div class="legend-dot dam"></div><div class="legend-label">DAM</div></div>
+                <div class="legend-item"><div class="legend-dot joy"></div><div class="legend-label">JOYSOUND</div></div>
+              </div>
+            </div>
+            <div class="chart-area">
+              <svg class="chart-svg" viewBox="0 0 260 72" preserveAspectRatio="none">
+                <path d="M0,52 L52,46 L104,40 L156,28 L208,18 L260,10" fill="none" stroke="#0066cc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="0" cy="52" r="2.5" fill="#0066cc"/><circle cx="52" cy="46" r="2.5" fill="#0066cc"/><circle cx="104" cy="40" r="2.5" fill="#0066cc"/><circle cx="156" cy="28" r="2.5" fill="#0066cc"/><circle cx="208" cy="18" r="2.5" fill="#0066cc"/><circle cx="260" cy="10" r="3.5" fill="#0066cc"/>
+                <path d="M30,58 L90,50 L150,42 L240,30" fill="none" stroke="#f97316" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="30" cy="58" r="2.5" fill="#f97316"/><circle cx="90" cy="50" r="2.5" fill="#f97316"/><circle cx="150" cy="42" r="2.5" fill="#f97316"/><circle cx="240" cy="30" r="3.5" fill="#f97316"/>
+              </svg>
+            </div>
+          </div>
+          <div>
+            <div class="section-label"><span>記録履歴（左スワイプで編集・削除）</span></div>
+            <div class="history-item"><div class="history-date">5/10</div><div class="machine-badge dam">DAM</div><div class="history-score">92.4</div></div>
+            <div class="history-item"><div class="history-date">4/22</div><div class="machine-badge joy">JOY</div><div class="history-score">89.2</div></div>
+            <div class="history-swipe-row"><div class="history-swipe-inner"><div class="history-date">4/5</div><div class="machine-badge joy">JOY</div><div class="history-score mid">86.0</div></div><div class="history-swipe-actions"><div class="history-edit-btn"><div class="history-edit-icon">✏️</div>編集</div><div class="history-del-btn"><div class="history-del-icon">🗑</div>削除</div></div></div>
+            <div class="history-item"><div class="history-date">3/18</div><div class="machine-badge dam">DAM</div><div class="history-score mid">83.5</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="record-btn-wrap"><div class="record-btn"><span>🎤</span><span>点数を記録する</span></div></div>
+      <div class="bottom-nav"><div class="nav-item active"><div class="nav-icon">♪</div><div>曲一覧</div></div><div class="nav-item"><div class="nav-icon">⚙️</div><div>設定</div></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="section-divider">B · 点数記録フロー（ボトムシート・機種選択トグル）</div>
+<div class="grid">
+
+  <!-- 03 SCORE INPUT BOTTOM SHEET -->
+  <div class="screen-wrap">
+    <div class="screen-label">03 · 点数入力 ボトムシート [CHANGE]</div>
+    <div class="phone">
+      <div class="island"></div>
+      <div class="status-bar" style="filter:brightness(0.5)"><span class="time">9:41</span><div class="status-icons"><span>●●● WiFi 🔋</span></div></div>
+      <div class="screen-content s2" style="filter:brightness(0.45)">
+        <div class="detail-header"><div class="back-btn">‹</div><div><div class="detail-song-title">ガーネット</div><div class="detail-artist">奥華子</div></div></div>
+        <div class="detail-scroll"><div class="best-card"><div><div class="label">最高スコア</div><div class="value">92.4</div></div><div><div class="label">記録回数</div><div class="count">8回</div></div></div></div>
+      </div>
+      <div class="overlay"></div>
+      <div class="bottom-sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-title">点数を記録する</div>
+        <div class="sheet-subtitle">ガーネット ／ 奥華子</div>
+        <div class="score-display"><div class="num">88.5</div><div class="unit">点</div></div>
+        <div class="machine-toggle-row">
+          <div class="machine-toggle-label">機種</div>
+          <div class="machine-toggle">
+            <div class="machine-toggle-btn selected dam"><div class="machine-dot dam"></div>DAM</div>
+            <div class="machine-toggle-btn"><div class="machine-dot joy"></div>JOYSOUND</div>
+          </div>
+        </div>
+        <div class="session-hint">※ 今日中はこの機種が記憶されます</div>
+        <div class="numpad"><div class="num-key">1</div><div class="num-key">2</div><div class="num-key">3</div><div class="num-key">4</div><div class="num-key">5</div><div class="num-key">6</div><div class="num-key">7</div><div class="num-key">8</div><div class="num-key">9</div><div class="num-key">.</div><div class="num-key">0</div><div class="num-key del">⌫</div></div>
+        <div class="date-row"><span>📅</span><div class="date-val">2026/05/25</div></div>
+        <div class="save-score-btn">記録する</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 02b SCORE EDIT BOTTOM SHEET -->
+  <div class="screen-wrap">
+    <div class="screen-label">02b · 点数編集 ボトムシート [CHANGE]</div>
+    <div class="phone">
+      <div class="island"></div>
+      <div class="status-bar" style="filter:brightness(0.5)"><span class="time">9:41</span><div class="status-icons"><span>●●● WiFi 🔋</span></div></div>
+      <div class="screen-content s2" style="filter:brightness(0.45)">
+        <div class="detail-header"><div class="back-btn">‹</div><div><div class="detail-song-title">ガーネット</div><div class="detail-artist">奥華子</div></div></div>
+        <div class="detail-scroll"><div class="best-card"><div><div class="label">最高スコア</div><div class="value">92.4</div></div><div><div class="label">記録回数</div><div class="count">8回</div></div></div></div>
+      </div>
+      <div class="overlay"></div>
+      <div class="bottom-sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-title">点数を編集する</div>
+        <div class="sheet-subtitle">ガーネット ／ 奥華子 ／ 4/5 の記録</div>
+        <div class="score-display"><div class="num">86.0</div><div class="unit">点</div></div>
+        <div class="machine-toggle-row">
+          <div class="machine-toggle-label">機種</div>
+          <div class="machine-toggle">
+            <div class="machine-toggle-btn"><div class="machine-dot dam"></div>DAM</div>
+            <div class="machine-toggle-btn selected joy"><div class="machine-dot joy"></div>JOYSOUND</div>
+          </div>
+        </div>
+        <div class="session-hint">※ 既存記録の機種を表示。変更してもセッションには影響しない</div>
+        <div class="numpad"><div class="num-key">1</div><div class="num-key">2</div><div class="num-key">3</div><div class="num-key">4</div><div class="num-key">5</div><div class="num-key">6</div><div class="num-key">7</div><div class="num-key">8</div><div class="num-key">9</div><div class="num-key">.</div><div class="num-key">0</div><div class="num-key del">⌫</div></div>
+        <div class="date-row"><span>📅</span><div class="date-val">2026/04/05</div></div>
+        <div class="save-score-btn">変更を保存する</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 04 REGISTER -->
+  <div class="screen-wrap">
+    <div class="screen-label">04 · 曲登録 / 曲編集（共通フォーム）</div>
+    <div class="phone">
+      <div class="island"></div>
+      <div class="status-bar"><span class="time">9:41</span><div class="status-icons"><span>●●● WiFi 🔋</span></div></div>
+      <div class="screen-content s4">
+        <div class="reg-header"><div class="close-btn">✕</div><div class="reg-title">曲を追加</div></div>
+        <div class="reg-form">
+          <div class="field-group"><div class="field-label">曲名</div><div class="field-input focused">ガーネット</div><div class="suggest-list"><div class="suggest-item"><div class="suggest-thumb">🎵</div><div class="suggest-text"><div class="st">ガーネット</div><div class="sa">奥華子</div></div></div><div class="suggest-item"><div class="suggest-thumb">🎶</div><div class="suggest-text"><div class="st">ガーネット（カバー）</div><div class="sa">Various Artists</div></div></div></div></div>
+          <div class="field-group"><div class="field-label">アーティスト名</div><div class="field-input filled">奥華子</div></div>
+          <div class="field-group"><div class="field-label">タブ（カテゴリ）</div><div class="tab-selector"><div class="tab-option selected">十八番</div><div class="tab-option">練習中</div><div class="tab-option">アニソン</div><div class="tab-option add">＋ 新規作成</div></div></div>
+          <div class="field-group"><div class="field-label">キー（音域）</div><div class="key-stepper"><div class="key-stepper-btn">－</div><div class="key-stepper-val">+1</div><div class="key-stepper-btn">＋</div></div><div style="font-size:10px;color:var(--text3);margin-top:4px;">未設定にしたい場合は「キーなし」にしてください</div></div>
+          <div class="field-group"><div class="field-label">メモ（任意）</div><div class="field-input" style="min-height:56px;line-height:1.5;">サビの入りに注意。ブレスを長めに。</div></div>
+        </div>
+        <div class="save-btn">曲を追加する</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section-divider">C · 設定・機種選択・オンボーディング</div>
+<div class="grid">
+
+  <!-- 05 SETTINGS -->
+  <div class="screen-wrap">
+    <div class="screen-label">05 · 設定 [CHANGE]</div>
+    <div class="phone">
+      <div class="island"></div>
+      <div class="status-bar"><span class="time">9:41</span><div class="status-icons"><span>●●● WiFi 🔋</span></div></div>
+      <div class="screen-content s5">
+        <div class="settings-header"><div class="settings-title">設定</div></div>
+        <div class="settings-scroll">
+          <div><div class="settings-section-label">タブ管理</div><div class="settings-group"><div class="settings-row"><div class="settings-row-icon icon-purple">🗂</div><div class="settings-row-text"><div class="settings-row-label">タブを編集する</div><div class="settings-row-sub">追加・名前変更・削除・並び替え</div></div><div class="settings-row-right">›</div></div></div></div>
+          <div>
+            <div class="settings-section-label">カラオケ機種</div>
+            <div class="settings-group">
+              <div class="settings-row">
+                <div class="settings-row-icon icon-dam">🎤</div>
+                <div class="settings-row-text"><div class="settings-row-label">デフォルト機種</div><div class="settings-row-sub">点数記録時にプリセットされる機種</div></div>
+                <div class="settings-row-value dam">DAM</div><div class="settings-row-right">›</div>
+              </div>
+            </div>
+          </div>
+          <div><div class="settings-section-label">表示設定</div><div class="settings-group"><div class="settings-row"><div class="settings-row-icon icon-purple">↕️</div><div class="settings-row-text"><div class="settings-row-label">曲の並び順</div><div class="settings-row-sub">曲一覧の表示順</div></div><div class="settings-row-value">登録順</div><div class="settings-row-right">›</div></div></div></div>
+          <div><div class="settings-section-label">データ管理</div><div class="settings-group"><div class="settings-row"><div class="settings-row-icon icon-purple">📤</div><div class="settings-row-text"><div class="settings-row-label">バックアップを書き出す</div><div class="settings-row-sub">JSON形式で共有シートに書き出し</div></div><div class="settings-row-right">›</div></div><div class="settings-row"><div class="settings-row-icon icon-red">🗑</div><div class="settings-row-text"><div class="danger-label">すべてのデータを削除</div><div class="settings-row-sub">この操作は取り消せません</div></div><div class="settings-row-right">›</div></div></div></div>
+          <div><div class="settings-section-label">アプリ情報</div><div class="settings-group"><div class="settings-row"><div class="settings-row-icon icon-gray">ℹ️</div><div class="settings-row-text"><div class="settings-row-label">バージョン</div></div><div class="settings-row-value">1.0.0</div></div><div class="settings-row"><div class="settings-row-icon icon-gray">📄</div><div class="settings-row-text"><div class="settings-row-label">プライバシーポリシー</div></div><div class="settings-row-right">›</div></div></div></div>
+        </div>
+      </div>
+      <div class="bottom-nav"><div class="nav-item"><div class="nav-icon">♪</div><div>曲一覧</div></div><div class="nav-item active"><div class="nav-icon">⚙️</div><div>設定</div></div></div>
+    </div>
+  </div>
+
+  <!-- 06 DEFAULT MACHINE SELECT -->
+  <div class="screen-wrap">
+    <div class="screen-label">06 · デフォルト機種選択 [NEW]</div>
+    <div class="phone">
+      <div class="island"></div>
+      <div class="status-bar"><span class="time">9:41</span><div class="status-icons"><span>●●● WiFi 🔋</span></div></div>
+      <div class="screen-content s6">
+        <div class="machine-header"><div class="back-btn">‹</div><div><div class="machine-title">デフォルト機種</div><div class="machine-sub">点数記録時に最初に選ばれる機種</div></div></div>
+        <div class="machine-list">
+          <div class="machine-card selected dam"><div class="machine-card-icon dam">D</div><div class="machine-card-text"><div class="machine-card-name">DAM</div><div class="machine-card-desc">第一興商の精密採点</div></div><div class="machine-card-check dam">✓</div></div>
+          <div class="machine-card"><div class="machine-card-icon joy">J</div><div class="machine-card-text"><div class="machine-card-name">JOYSOUND</div><div class="machine-card-desc">エクシングの分析採点マスター</div></div><div class="machine-card-check unchecked"></div></div>
+        </div>
+        <div class="session-note"><div class="note-title"><span>💡</span><span>セッション記憶について</span></div>点数記録時に機種を変更すると、その日のうちは変更後の機種が記憶されます。翌日にアプリを開くと、ここで設定したデフォルト機種に戻ります。</div>
+      </div>
+      <div class="bottom-nav"><div class="nav-item"><div class="nav-icon">♪</div><div>曲一覧</div></div><div class="nav-item active"><div class="nav-icon">⚙️</div><div>設定</div></div></div>
+    </div>
+  </div>
+
+  <!-- 07 ONBOARDING -->
+  <div class="screen-wrap">
+    <div class="screen-label">07 · 初回セットアップ [NEW]</div>
+    <div class="phone">
+      <div class="island"></div>
+      <div class="status-bar"><span class="time">9:41</span><div class="status-icons"><span>●●● WiFi 🔋</span></div></div>
+      <div class="screen-content" style="padding:0;">
+        <div style="padding:32px 24px 16px; text-align:center;">
+          <div style="font-family:'Plus Jakarta Sans',sans-serif; font-size:28px; font-weight:800; color:var(--accent); letter-spacing:-0.02em; margin-bottom:8px;">歌帳</div>
+          <div style="font-size:11px; color:var(--text2); letter-spacing:0.05em;">ようこそ！</div>
+        </div>
+        <div style="padding:20px 24px 8px; text-align:center;">
+          <div style="font-family:'Plus Jakarta Sans',sans-serif; font-size:17px; font-weight:700; line-height:1.4; margin-bottom:8px;">いつもどちらで<br>歌いますか？</div>
+          <div style="font-size:11px; color:var(--text2); line-height:1.5;">普段使う機種を選んでください。<br>あとから設定画面で変更できます。</div>
+        </div>
+        <div class="machine-list" style="padding:24px 18px 0;">
+          <div class="machine-card selected dam"><div class="machine-card-icon dam">D</div><div class="machine-card-text"><div class="machine-card-name">DAM</div><div class="machine-card-desc">第一興商の精密採点</div></div><div class="machine-card-check dam">✓</div></div>
+          <div class="machine-card"><div class="machine-card-icon joy">J</div><div class="machine-card-text"><div class="machine-card-name">JOYSOUND</div><div class="machine-card-desc">エクシングの分析採点マスター</div></div><div class="machine-card-check unchecked"></div></div>
+        </div>
+        <div style="padding:24px 18px;"><div style="padding:14px; background:var(--accent); border-radius:13px; text-align:center; font-size:14px; font-weight:700; color:#fff; box-shadow:0 6px 18px rgba(91,76,245,0.3);">はじめる</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

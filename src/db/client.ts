@@ -1,14 +1,16 @@
 import * as SQLite from 'expo-sqlite';
 import { Platform } from 'react-native';
 import { schema } from './schema';
+import { runMigrations } from './migrations';
 
 let _db: SQLite.SQLiteDatabase | null = null;
 
-export function initDatabase(): void {
+export async function initDatabase(): Promise<void> {
   if (Platform.OS === 'web') return;
   _db = SQLite.openDatabaseSync('mykara.db');
   _db.execSync('PRAGMA foreign_keys = ON;');
   _db.execSync(schema);
+  await runMigrations(_db);
 }
 
 export function getDb(): SQLite.SQLiteDatabase {

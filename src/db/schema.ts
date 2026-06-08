@@ -10,6 +10,7 @@ export const schema = `
     artist      TEXT    NOT NULL DEFAULT '',
     key_offset  INTEGER,
     artwork_url TEXT,
+    memo        TEXT    NOT NULL DEFAULT '',
     created_at  TEXT    NOT NULL
   );
   CREATE TABLE IF NOT EXISTS song_tabs (
@@ -21,6 +22,11 @@ export const schema = `
     id        INTEGER PRIMARY KEY AUTOINCREMENT,
     song_id   INTEGER NOT NULL REFERENCES songs(id) ON DELETE CASCADE,
     score     REAL    NOT NULL,
-    scored_at TEXT    NOT NULL
+    scored_at TEXT    NOT NULL,
+    machine   TEXT    NOT NULL CHECK (machine IN ('DAM', 'JOYSOUND'))
+  );
+  CREATE TABLE IF NOT EXISTS settings (
+    key   TEXT PRIMARY KEY,
+    value TEXT NOT NULL
   );
 `;
