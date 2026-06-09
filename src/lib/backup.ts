@@ -1,8 +1,24 @@
+import * as DocumentPicker from 'expo-document-picker';
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { getDb } from '../db/client';
 
 const SETTINGS_WHITELIST = ['default_machine', 'onboarding_completed'] as const;
+
+// ---- インポート用型定義 ----
+
+type BackupRow = Record<string, unknown>;
+
+export type BackupData = {
+  version: string;
+  schemaVersion: number;
+  exportedAt: string;
+  settings: { key: string; value: string }[];
+  tabs: BackupRow[];
+  songs: BackupRow[];
+  song_tabs: BackupRow[];
+  scores: BackupRow[];
+};
 
 export async function buildBackupJson(): Promise<string> {
   const db = getDb();
@@ -51,4 +67,110 @@ export async function exportBackup(): Promise<void> {
     mimeType: 'application/json',
     dialogTitle: 'バックアップを保存',
   });
+}
+
+// ---- インポート ----
+
+/** ファイルピッカーを開いてバックアップJSONを読み込む。キャンセル時は null を返す */
+export async function readBackupFile(): Promise<BackupData | null> {
+  const result = await DocumentPicker.getDocumentAsync({
+    type: ['application/json', 'public.json'],
+    copyToCacheDirectory: true,
+  });
+
+  if (result.canceled) return null;
+
+  const file = new File(result.assets[0].uri);
+  const content = await file.text();
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(content);
+  } catch {
+    throw new Error('JSONの解析に失敗しました。ファイルが壊れている可能性があります。');
+  }
+
+  if (
+    typeof parsed !== 'object' ||
+    parsed === null ||
+    !Array.isArray((parsed as BackupData).tabs) ||
+    !Array.isArray((parsed as BackupData).songs) ||
+    !Array.isArray((parsed as BackupData).scores)
+  ) {
+    throw new Error('バックアップファイルの形式が正しくありません。');
+  }
+
+  return parsed as BackupData;
+}
+
+/** バックアップデータをDBに書き戻す（既存データはすべて上書き）*/
+export function restoreFromBackup(data: BackupData): void {
+  const db = getDb();
+
+  db.execSync('BEGIN TRANSACTION');
+  try {
+    // 既存データを全削除（FK制約のため scores → song_tabs → songs → tabs の順）
+    db.execSync('DELETE FROM scores');
+    db.execSync('DELETE FROM song_tabs');
+    db.execSync('DELETE FROM songs');
+    db.execSync('DELETE FROM tabs');
+
+    for (const tab of data.tabs) {
+      db.runSync(
+        'INSERT INTO tabs (id, name, sort_order) VALUES (?, ?, ?)',
+        [tab.id as number, tab.name as string, (tab.sort_order as number) ?? 0]
+      );
+    }
+
+    for (const song of data.songs) {
+      db.runSync(
+        'INSERT INTO songs (id, title, artist, key_offset, artwork_url, memo, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [
+          song.id as number,
+          song.title as string,
+          (song.artist as string) ?? '',
+          (song.key_offset as number | null) ?? null,
+          (song.artwork_url as string | null) ?? null,
+          (song.memo as string) ?? '',
+          song.created_at as string,
+        ]
+      );
+    }
+
+    for (const st of data.song_tabs) {
+      db.runSync(
+        'INSERT INTO song_tabs (song_id, tab_id) VALUES (?, ?)',
+        [st.song_id as number, st.tab_id as number]
+      );
+    }
+
+    for (const score of data.scores) {
+      // machine がないスコアはスキップ（古い形式のバックアップ対策）
+      if (!score.machine) continue;
+      db.runSync(
+        'INSERT INTO scores (id, song_id, score, scored_at, machine) VALUES (?, ?, ?, ?, ?)',
+        [
+          score.id as number,
+          score.song_id as number,
+          score.score as number,
+          score.scored_at as string,
+          score.machine as string,
+        ]
+      );
+    }
+
+    for (const s of (data.settings ?? [])) {
+      if ((SETTINGS_WHITELIST as readonly string[]).includes(s.key)) {
+        db.runSync(
+          'INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)',
+          [s.key, s.value]
+        );
+      }
+    }
+
+    db.execSync('COMMIT');
+  } catch (e) {
+    db.execSync('ROLLBACK');
+    throw e;
+  }
 }

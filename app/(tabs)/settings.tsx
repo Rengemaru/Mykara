@@ -6,12 +6,13 @@ import { colors } from '../../src/constants/colors';
 import { fonts } from '../../src/constants/fonts';
 import { getDb } from '../../src/db/client';
 import { getDefaultMachine, type Machine } from '../../src/lib/machine';
-import { exportBackup } from '../../src/lib/backup';
+import { exportBackup, readBackupFile, restoreFromBackup } from '../../src/lib/backup';
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const [defaultMachine, setDefaultMachineState] = useState<Machine>('DAM');
   const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
 
   useFocusEffect(useCallback(() => {
     if (Platform.OS === 'web') return;
@@ -31,6 +32,45 @@ export default function SettingsScreen() {
       Alert.alert('エラー', 'バックアップの書き出しに失敗しました');
     } finally {
       setIsExporting(false);
+    }
+  }
+
+  async function handleImportBackup() {
+    if (Platform.OS === 'web') {
+      Alert.alert('非対応', 'バックアップの読み込みはモバイル端末でのみ使用できます');
+      return;
+    }
+    try {
+      setIsImporting(true);
+      const data = await readBackupFile();
+      if (!data) return;
+
+      const summary = `タブ ${data.tabs.length}件・曲 ${data.songs.length}件・スコア ${data.scores.length}件`;
+      Alert.alert(
+        'バックアップを読み込みますか？',
+        `${summary}\n\n現在のデータはすべて上書きされます。この操作は取り消せません。`,
+        [
+          { text: 'キャンセル', style: 'cancel' },
+          {
+            text: '読み込む',
+            style: 'destructive',
+            onPress: () => {
+              try {
+                restoreFromBackup(data);
+                Alert.alert('完了', 'バックアップを復元しました');
+              } catch (e) {
+                console.error(e);
+                Alert.alert('エラー', '復元に失敗しました');
+              }
+            },
+          },
+        ]
+      );
+    } catch (e) {
+      console.error(e);
+      Alert.alert('エラー', e instanceof Error ? e.message : 'ファイルの読み込みに失敗しました');
+    } finally {
+      setIsImporting(false);
     }
   }
 
@@ -139,6 +179,23 @@ export default function SettingsScreen() {
                 : <Text style={styles.rowChevron}>›</Text>
               }
             </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.row}
+              onPress={handleImportBackup}
+              disabled={isImporting}
+            >
+              <View style={[styles.rowIcon, styles.iconGreen]}>
+                <Text style={styles.rowEmoji}>📂</Text>
+              </View>
+              <View style={styles.rowText}>
+                <Text style={styles.rowLabel}>バックアップを読み込む</Text>
+                <Text style={styles.rowSub}>JSONファイルから全データを復元する</Text>
+              </View>
+              {isImporting
+                ? <ActivityIndicator size="small" color={colors.green} />
+                : <Text style={styles.rowChevron}>›</Text>
+              }
+            </TouchableOpacity>
             <TouchableOpacity style={[styles.row, styles.rowNoBorder]} onPress={handleDeleteAll}>
               <View style={[styles.rowIcon, styles.iconRed]}>
                 <Text style={styles.rowEmoji}>🗑</Text>
@@ -244,6 +301,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   iconPurple: { backgroundColor: colors.accentSoft },
+  iconGreen: { backgroundColor: 'rgba(0, 185, 107, 0.1)' },
   iconRed: { backgroundColor: 'rgba(239, 68, 68, 0.1)' },
   iconGray: { backgroundColor: colors.surface2 },
   iconDam: { backgroundColor: colors.damSoft },
