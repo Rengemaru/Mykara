@@ -11,9 +11,12 @@ export const MIGRATIONS: Migration[] = [
     version: 1,
     description: 'add memo column to songs',
     up: async (db) => {
-      await db.execAsync(
-        `ALTER TABLE songs ADD COLUMN memo TEXT NOT NULL DEFAULT ''`
-      );
+      const cols = await db.getAllAsync<{ name: string }>('PRAGMA table_info(songs)');
+      if (!cols.some((c) => c.name === 'memo')) {
+        await db.execAsync(
+          `ALTER TABLE songs ADD COLUMN memo TEXT NOT NULL DEFAULT ''`
+        );
+      }
     },
   },
   {
@@ -21,7 +24,7 @@ export const MIGRATIONS: Migration[] = [
     description: 'create settings table',
     up: async (db) => {
       await db.execAsync(`
-        CREATE TABLE settings (
+        CREATE TABLE IF NOT EXISTS settings (
           key   TEXT PRIMARY KEY,
           value TEXT NOT NULL
         )
@@ -32,11 +35,14 @@ export const MIGRATIONS: Migration[] = [
     version: 3,
     description: 'add machine column to scores (delete existing test data)',
     up: async (db) => {
-      await db.execAsync(`DELETE FROM scores`);
-      await db.execAsync(`
-        ALTER TABLE scores ADD COLUMN machine TEXT NOT NULL
-          CHECK (machine IN ('DAM', 'JOYSOUND'))
-      `);
+      const cols = await db.getAllAsync<{ name: string }>('PRAGMA table_info(scores)');
+      if (!cols.some((c) => c.name === 'machine')) {
+        await db.execAsync(`DELETE FROM scores`);
+        await db.execAsync(`
+          ALTER TABLE scores ADD COLUMN machine TEXT NOT NULL
+            CHECK (machine IN ('DAM', 'JOYSOUND'))
+        `);
+      }
     },
   },
 ];
