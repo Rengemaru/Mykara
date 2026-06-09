@@ -81,7 +81,7 @@ export async function readBackupFile(): Promise<BackupData | null> {
   if (result.canceled) return null;
 
   const file = new File(result.assets[0].uri);
-  const content = file.text();
+  const content = await file.text();
 
   let parsed: unknown;
   try {
