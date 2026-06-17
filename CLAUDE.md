@@ -468,7 +468,7 @@ const colors = {
 
 - ヘッダー: 戻るボタン + 曲名 + アーティスト名
 - 最高スコアカード: 最高スコア（34px）+ 前回比（±pt）+ 記録回数
-- 点数推移グラフ: react-native-gifted-charts の `LineChart`（折れ線）
+- 点数推移グラフ: Victory Native の `VictoryLine`（折れ線）
 - 記録履歴リスト: 日付・スコア。左スワイプで `[✏️ 編集]` `[🗑 削除]`
 - 下部固定: `🎤 点数を記録する` ボタン（accent色）
 
