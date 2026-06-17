@@ -14,8 +14,9 @@
 | 項目 | 内容 |
 |---|---|
 | アプリ名 | 歌帳 |
-| 概要 | カラオケの持ち歌・点数を管理するiOSアプリ |
-| ターゲット | App Store（iOS）で一般公開 |
+| 概要 | カラオケの持ち歌・点数を管理するモバイルアプリ |
+| 現在のターゲット | **Google Play（Android）で先行公開** |
+| 将来のターゲット | App Store（iOS）※後続フェーズで対応 |
 | 開発OS | Windows |
 | 開発者スキル | Expo初学者・React Native未経験 |
 | 優先順位 | 品質 > 納期 > コスト |
@@ -559,6 +560,7 @@ expo-sqlite は接続のたびに外部キー制約がリセットされる。
 - コミット後、このファイルに記載のコミットメッセージをそのまま使う
 - ブランチ戦略: feature/<機能名> ブランチを切り、完了後 main へ PR・マージ
 - コミットメッセージ形式: [タスクNo] 日本語で内容を説明
+- google-services-key.json は .gitignore に追加済み。絶対にコミットしない
 ```
 
 ---
@@ -1004,15 +1006,40 @@ export function useSongs(tabId: number) {
 
 ---
 
-### Phase 4: ストア申請・公開（10h）
+### Phase 4: Google Play 公開（現在進行中）
 
-| # | タスク | 目安時間 | コミットメッセージ |
+| # | タスク | 状態 | 備考 |
 |---|---|---|---|
-| 4-1 | App Store Connect セットアップ | 2h | `[4-1] App Store Connect設定完了` |
-| 4-2 | スクリーンショット・説明文作成 | 2h | `[4-2] ストア掲載素材作成` |
-| 4-3 | プライバシーポリシー作成 | 1h | `[4-3] プライバシーポリシー追加` |
-| 4-4 | EAS Submit で申請 | 1h | `[4-4] App Store申請` |
-| 4-5 | 審査待ち・フィードバック対応 | 4h | `[4-5] 審査フィードバック対応` |
+| 4-A | Google Play デベロッパーアカウント登録 | ⚠️ 要確認 | $25・承認に数日かかる場合あり |
+| 4-B | `google-services-key.json` の取得と配置 | ⚠️ 要確認 | Google Play Console → APIアクセス → サービスアカウント作成 → JSONキー配置 |
+| 4-C | Google Play Console でアプリ新規作成 | ⚠️ 要確認 | パッケージ名: `com.rengemaru.mykara` |
+| 4-D | ストア掲載素材の準備 | ⚠️ 要確認 | スクショ最低2枚・フィーチャーグラフィック1024×500px・説明文 |
+| 4-E | コンテンツレーティング（アンケート回答） | ⚠️ 要確認 | Google Play Console 内で完結 |
+| 4-F | プライバシーポリシーの作成・URL設定 | ⚠️ 要確認 | 審査で必須 |
+| 4-G | データ安全性の回答 | ⚠️ 要確認 | ネット通信あり・個人情報収集なし |
+| 4-H | EAS Build（AAB形式） | ⚠️ 要確認 | `eas build --platform android --profile production` |
+| 4-I | EAS Submit（内部テスト配布） | ⚠️ 要確認 | `eas submit --platform android --profile production` |
+| 4-J | 内部テストで動作確認 | ⚠️ 要確認 | 実機でひと通り操作 |
+| 4-K | 一般公開（track を production に変更） | ⚠️ 要確認 | 内部テスト確認後 |
+
+#### ビルド・提出コマンド
+
+```powershell
+# AABビルド（Google Play必須形式）
+eas build --platform android --profile production
+
+# ストアへ提出（内部テスト）
+eas submit --platform android --profile production
+```
+
+#### `google-services-key.json` の取得手順
+
+1. Google Play Console → 設定 → APIアクセス
+2. Googleサービスアカウントを新規作成
+3. 権限: 「リリースマネージャー」を付与
+4. JSONキーをダウンロード
+5. プロジェクトルートに `google-services-key.json` として配置
+6. `.gitignore` に追加済みであることを確認
 
 ---
 
@@ -1065,8 +1092,8 @@ export function useSongs(tabId: number) {
 
 ## 12. 今後の対応候補
 
-- Android対応
-- App Store申請・公開
+- Google Play 一般公開（Phase 4 完了後）
+- App Store 申請・公開（Phase 5）
 
 ---
 
