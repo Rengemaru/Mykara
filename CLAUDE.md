@@ -953,7 +953,7 @@ export function useSongs(tabId: number) {
 | 2-6 | 点数入力ボトムシート（新規） | 2h | `[2-6] 点数入力ボトムシート実装` |
 | 2-7 | 点数編集ボトムシート（編集） | 1h | `[2-7] 点数編集ボトムシート実装` |
 | 2-8 | 曲詳細画面（最高スコア・履歴） | 2h | `[2-8] 曲詳細画面実装` |
-| 2-9 | 点数推移グラフ（Victory Native） | 2h | `[2-9] 点数推移グラフ実装` |
+| 2-9 | 点数推移グラフ（gifted-charts） | 2h | `[2-9] 点数推移グラフ実装` |
 | 2-10 | 履歴行左スワイプ（編集・削除） | 1h | `[2-10] 履歴行左スワイプアクション実装` |
 | 2-11 | タブ管理画面（設定内） | 2h | `[2-11] タブ管理画面実装` |
 | 2-12 | 設定画面全体 | 2h | `[2-12] 設定画面実装` |
@@ -1049,4 +1049,117 @@ export function useSongs(tabId: number) {
 
 ---
 
-*このファイルはプロジェクトルート `CLAUDE.md` として配置されている。旧版は `docs/instructions/CLAUDE.md` に保存。*
+## 13. 確定実装仕様（変更前に必ず確認）
+
+以下はすでに動作しています。**理由なく変更しないこと。**
+
+### 曲管理
+- 曲の登録・編集・削除（左スワイプ）
+- タブ（カテゴリ）の作成・編集・削除
+- 曲↔タブの多対多紐づけ
+- キー（音域）ステッパー
+
+### スコア管理
+- 点数の手入力（テンキー UI）
+- 日付ナビゲーション（‹/›ボタンで1日単位変更、未来日付は不可）
+- スコア履歴の編集・削除（左スワイプ）
+- 点数推移グラフ（react-native-gifted-charts）
+
+### 曲カードのスコア表示ルール（確定仕様）
+```typescript
+// best_score のみ表示。0点は「—」表示（仕様通り・変更禁止）
+const score = song.best_score;
+{score != null && score > 0 ? score.toFixed(1) : '—'}
+```
+
+### iTunes Search API
+- 曲名フィールド: `attribute=songTerm` で検索
+- アーティスト名フィールド: `attribute=artistTerm` で検索
+- サジェスト選択後の再検索防止: `pausedRef` フラグで制御
+- abort 競合対策: ローカル変数 `controller` で管理
+
+### Android 対応（実装済み）
+- ステータスバー制御
+- `KeyboardAvoidingView`（`behavior="height"`）
+- `Modal`（Android互換）
+- スプラッシュ画面
+- アダプティブアイコン（foreground / background / monochrome）
+
+---
+
+## 14. バグ修正状況
+
+以下の修正は `fix/bug-fixes-after-review` ブランチで実装されたが、
+drag-reorder機能のrevertと一緒に取り消されました。
+その後、T4〜T5 タスクで改めて再適用されています。
+
+| fix | 内容 | 対象ファイル | 状態 |
+|---|---|---|---|
+| fix-C | iTunes検索の最小文字数を 2→1 に変更（1文字のアーティスト名対応） | `src/hooks/useMusicSearch.ts` | ✅ T5で適用済み |
+| fix-D | 編集モード起動時に `pausedRef` をリセット・`song.tabs` の nullチェック追加 | `app/song/new.tsx` | ✅ T4で適用済み |
+| fix-E | `react-native-reanimated` を Expo SDK 54 互換バージョン（`~4.1.1`）に固定 | `package.json` | ⚠️ 未適用（要検討） |
+
+---
+
+## 15. app.json の Android 設定（確認済み）
+
+```json
+{
+  "android": {
+    "package": "com.rengemaru.mykara",
+    "versionCode": 1,
+    "permissions": ["android.permission.INTERNET"],
+    "adaptiveIcon": {
+      "foregroundImage": "./assets/adaptive-icon.png",
+      "backgroundImage": "./assets/adaptive-icon-background.png",
+      "monochromeImage": "./assets/adaptive-icon-monochrome.png"
+    },
+    "predictiveBackGestureEnabled": false
+  }
+}
+```
+
+---
+
+## 16. eas.json の設定（確認済み）
+
+```json
+{
+  "build": {
+    "production": {
+      "android": {
+        "buildType": "app-bundle"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "android": {
+        "serviceAccountKeyPath": "./google-services-key.json",
+        "track": "internal"
+      }
+    }
+  }
+}
+```
+
+> ⚠️ `track: "internal"` は内部テスト配布の設定です。
+> 一般公開時は `"track": "production"` に変更が必要です。
+
+---
+
+## 17. 将来フェーズ
+
+### Phase 5: iOS / App Store 公開
+- Apple Developer Program 登録（年額 $99）
+- EAS Build（iOS）
+- TestFlight での動作確認
+- App Store Connect セットアップ・審査申請
+
+### Phase 6: 機能追加（未確定）
+- データエクスポート（CSV等）
+- 曲の並び替え（drag-reorder）※過去に実装・バグのため取り消し済み
+
+---
+
+*このファイルはプロジェクトルートの `CLAUDE.md` として配置されている。*
