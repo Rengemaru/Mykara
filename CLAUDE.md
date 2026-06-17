@@ -1049,4 +1049,4 @@ export function useSongs(tabId: number) {
 
 ---
 
-*このファイルは `docs/instructions/CLAUDE.md` として配置されている。*
+*このファイルはプロジェクトルート `CLAUDE.md` として配置されている。旧版は `docs/instructions/CLAUDE.md` に保存。*
