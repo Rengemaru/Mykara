@@ -56,7 +56,7 @@ mykara/
 │   └── _layout.tsx               # ルートレイアウト（MachineProvider・オンボーディングガード）
 ├── src/
 │   ├── db/
-│   │   ├── client.ts             # DB接続・初期化・マイグレーション呼び出し
+│   │   ├── client.ts             # DB接続・初期化・マイグレーション呼び出し（getDb()でシングルトン取得）
 │   │   ├── schema.ts             # テーブル定義SQL（新規インストール用ベースライン）
 │   │   ├── migrations/
 │   │   │   └── index.ts          # マイグレーション定義・ランナー
@@ -64,7 +64,9 @@ mykara/
 │   │   ├── tabs.ts               # Tab CRUD関数
 │   │   ├── scores.ts             # Score CRUD関数
 │   │   ├── songTabs.ts           # song_tabs 操作関数
-│   │   └── settings.ts           # settings テーブルCRUD（AsyncStorage不使用）
+│   │   ├── settings.ts           # settings テーブルCRUD（AsyncStorage不使用）
+│   │   ├── mockData.ts           # 開発用モックデータ
+│   │   └── seed.ts               # 開発用seedデータ
 │   ├── types/
 │   │   └── index.ts              # 全型定義（Song / Tab / Score / Machine）
 │   ├── hooks/
@@ -74,9 +76,12 @@ mykara/
 │   │   └── useMusicSearch.ts     # iTunes検索フック（1文字以上で発火）
 │   ├── contexts/
 │   │   └── MachineContext.tsx    # 現在機種のReact Context
+│   ├── constants/
+│   │   ├── colors.ts             # デザイントークン（カラー定義）
+│   │   └── fonts.ts              # デザイントークン（フォント定義）
 │   ├── lib/
 │   │   ├── machine.ts            # 機種ロジック・セッション管理・オンボーディング
-│   │   └── backup.ts             # バックアップJSON構築・共有シート起動
+│   │   └── backup.ts             # バックアップJSON構築・共有シート起動・インポート復元
 │   ├── api/
 │   │   └── itunesSearch.ts       # iTunes Search API クライアント
 │   └── components/
@@ -228,19 +233,25 @@ export const MACHINES: readonly Machine[] = ['DAM', 'JOYSOUND'];
 
 ```typescript
 import * as SQLite from 'expo-sqlite';
+import { Platform } from 'react-native';
 import { schema } from './schema';
+import { runMigrations } from './migrations';
 
-// DB接続はシングルトン（1つだけ作る）
-const db = SQLite.openDatabaseSync('mykara.db');
+let _db: SQLite.SQLiteDatabase | null = null;
 
-export function initDatabase(): void {
-  // PRAGMA: 外部キー制約を有効化（ON DELETE CASCADE を機能させるために必須）
-  db.execSync('PRAGMA foreign_keys = ON;');
-  // スキーマ（テーブル定義）を流す
-  db.execSync(schema);
+export async function initDatabase(): Promise<void> {
+  if (Platform.OS === 'web') return;
+  _db = SQLite.openDatabaseSync('mykara.db');
+  _db.execSync('PRAGMA foreign_keys = ON;');
+  _db.execSync(schema);
+  await runMigrations(_db);
 }
 
-export { db };
+// DB インスタンスはシングルトン。未初期化時はエラーをスロー
+export function getDb(): SQLite.SQLiteDatabase {
+  if (!_db) throw new Error('Database not initialized. Call initDatabase() first.');
+  return _db;
+}
 ```
 
 ### 5-2. スキーマ（`src/db/schema.ts`）
@@ -258,6 +269,7 @@ export const schema = `
     artist      TEXT    NOT NULL DEFAULT '',
     key_offset  INTEGER,
     artwork_url TEXT,
+    memo        TEXT    NOT NULL DEFAULT '',
     created_at  TEXT    NOT NULL
   );
   CREATE TABLE IF NOT EXISTS song_tabs (
@@ -269,7 +281,12 @@ export const schema = `
     id        INTEGER PRIMARY KEY AUTOINCREMENT,
     song_id   INTEGER NOT NULL REFERENCES songs(id) ON DELETE CASCADE,
     score     REAL    NOT NULL,
-    scored_at TEXT    NOT NULL
+    scored_at TEXT    NOT NULL,
+    machine   TEXT    NOT NULL CHECK (machine IN ('DAM', 'JOYSOUND'))
+  );
+  CREATE TABLE IF NOT EXISTS settings (
+    key   TEXT PRIMARY KEY,
+    value TEXT NOT NULL
   );
 `;
 ```
@@ -277,12 +294,12 @@ export const schema = `
 ### 5-3. Song CRUD（`src/db/songs.ts`）
 
 ```typescript
-import { db } from './client';
+import { getDb } from './client';
 import { SongRow, SongWithStats } from '../types';
 
 /** 全曲取得（最高スコア・最新スコア・記録回数をJOINで集計） */
 export function getAllSongs(): SongWithStats[] {
-  return db.getAllSync<SongWithStats>(`
+  return getDb().getAllSync<SongWithStats>(`
     SELECT
       s.*,
       MAX(sc.score)  AS best_score,
@@ -297,7 +314,7 @@ export function getAllSongs(): SongWithStats[] {
 
 /** タブ別曲取得 */
 export function getSongsByTab(tabId: number): SongWithStats[] {
-  return db.getAllSync<SongWithStats>(`
+  return getDb().getAllSync<SongWithStats>(`
     SELECT
       s.*,
       MAX(sc.score)  AS best_score,
@@ -316,11 +333,13 @@ export function getSongsByTab(tabId: number): SongWithStats[] {
 export function insertSong(
   title: string,
   artist: string,
-  keyOffset: number | null
+  keyOffset: number | null,
+  artworkUrl?: string | null,
+  memo: string = ''
 ): number {
-  const result = db.runSync(
-    `INSERT INTO songs (title, artist, key_offset, created_at) VALUES (?, ?, ?, ?)`,
-    [title, artist, keyOffset, new Date().toISOString()]
+  const result = getDb().runSync(
+    `INSERT INTO songs (title, artist, key_offset, artwork_url, memo, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
+    [title, artist, keyOffset, artworkUrl ?? null, memo, new Date().toISOString()]
   );
   return result.lastInsertRowId;
 }
@@ -330,29 +349,31 @@ export function updateSong(
   id: number,
   title: string,
   artist: string,
-  keyOffset: number | null
+  keyOffset: number | null,
+  artworkUrl?: string | null,
+  memo: string = ''
 ): void {
-  db.runSync(
-    `UPDATE songs SET title = ?, artist = ?, key_offset = ? WHERE id = ?`,
-    [title, artist, keyOffset, id]
+  getDb().runSync(
+    `UPDATE songs SET title = ?, artist = ?, key_offset = ?, artwork_url = ?, memo = ? WHERE id = ?`,
+    [title, artist, keyOffset, artworkUrl ?? null, memo, id]
   );
 }
 
 /** 曲を削除（scores・song_tabsも連鎖削除） */
 export function deleteSong(id: number): void {
-  db.runSync(`DELETE FROM songs WHERE id = ?`, [id]);
+  getDb().runSync(`DELETE FROM songs WHERE id = ?`, [id]);
 }
 ```
 
 ### 5-4. song_tabs 操作（`src/db/songTabs.ts`）
 
 ```typescript
-import { db } from './client';
+import { getDb } from './client';
 import { TabRow } from '../types';
 
 /** 曲に紐づくタブ一覧を取得 */
 export function getTabsBySong(songId: number): TabRow[] {
-  return db.getAllSync<TabRow>(
+  return getDb().getAllSync<TabRow>(
     `SELECT t.* FROM tabs t JOIN song_tabs st ON st.tab_id = t.id WHERE st.song_id = ?`,
     [songId]
   );
@@ -360,7 +381,7 @@ export function getTabsBySong(songId: number): TabRow[] {
 
 /** 曲とタブを紐づける */
 export function attachTab(songId: number, tabId: number): void {
-  db.runSync(
+  getDb().runSync(
     `INSERT OR IGNORE INTO song_tabs (song_id, tab_id) VALUES (?, ?)`,
     [songId, tabId]
   );
@@ -368,7 +389,7 @@ export function attachTab(songId: number, tabId: number): void {
 
 /** 曲からタブの紐づけを外す */
 export function detachTab(songId: number, tabId: number): void {
-  db.runSync(
+  getDb().runSync(
     `DELETE FROM song_tabs WHERE song_id = ? AND tab_id = ?`,
     [songId, tabId]
   );
@@ -377,7 +398,7 @@ export function detachTab(songId: number, tabId: number): void {
 /** 曲のタブを一括更新（登録・編集フォームで使用） */
 export function syncTabs(songId: number, tabIds: number[]): void {
   // いったん全削除して貼り直す（差分管理より単純で安全）
-  db.runSync(`DELETE FROM song_tabs WHERE song_id = ?`, [songId]);
+  getDb().runSync(`DELETE FROM song_tabs WHERE song_id = ?`, [songId]);
   for (const tabId of tabIds) {
     attachTab(songId, tabId);
   }
@@ -536,7 +557,7 @@ expo-sqlite は接続のたびに外部キー制約がリセットされる。
 ```
 - 1タスク完了ごとに必ずコミットする
 - コミット後、このファイルに記載のコミットメッセージをそのまま使う
-- ブランチ戦略: main ブランチに直接コミットでOK（個人開発のため）
+- ブランチ戦略: feature/<機能名> ブランチを切り、完了後 main へ PR・マージ
 - コミットメッセージ形式: [タスクNo] 日本語で内容を説明
 ```
 
@@ -1038,12 +1059,12 @@ export function useSongs(tabId: number) {
 | メモ機能 | 曲登録・編集フォームに自由入力欄。詳細画面に表示 |
 | 重複登録チェック | 同名曲登録時に確認ダイアログ（大文字小文字・スペース無視） |
 | バックアップ（JSONエクスポート） | 全テーブルをJSON書き出し・共有シートで保存先選択 |
+| バックアップ（JSONインポート） | DocumentPickerでファイル選択・バリデーション・トランザクション復元 |
 | 詳細画面アートワーク | 曲詳細にiTunesアートワーク64x64表示（fallback: 🎵） |
 | グラフ（DAM/JOYSOUND 2系列） | gifted-charts の data/data2 でマシン別色分け折れ線 |
 
 ## 12. 今後の対応候補
 
-- バックアップの復元（インポート）機能
 - Android対応
 - App Store申請・公開
 
