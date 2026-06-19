@@ -19,6 +19,7 @@ import { SongCard } from '../../src/components/SongCard';
 import { colors } from '../../src/constants/colors';
 import { fonts } from '../../src/constants/fonts';
 import { deleteSong } from '../../src/db/songs';
+import { getSessionSummary, SessionSummary } from '../../src/db/scores';
 import { useSongs, ALL_TAB } from '../../src/hooks/useSongs';
 import { useTabs } from '../../src/hooks/useTabs';
 import { SongWithStats } from '../../src/types';
@@ -34,10 +35,27 @@ export default function HomeScreen() {
     useCallback(() => {
       reloadTabs();
       reload();
+      reloadSessionSummary();
     }, [reloadTabs, reload])
   );
   const [scoringSong, setScoringsSong] = useState<SongWithStats | null>(null);
+  const [sessionSummary, setSessionSummary] = useState<SessionSummary | null>(null);
   const swipeRefs = useRef<Map<number, Swipeable | null>>(new Map());
+
+  function todayString() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  function reloadSessionSummary() {
+    if (Platform.OS === 'web') return;
+    try {
+      const summary = getSessionSummary(todayString());
+      setSessionSummary(summary.song_count > 0 ? summary : null);
+    } catch (e) {
+      console.error(e);
+    }
+  }
 
   function closeOtherSwipeables(currentId: number) {
     swipeRefs.current.forEach((ref, id) => {
@@ -101,6 +119,29 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* セッションサマリーバナー */}
+      {sessionSummary && (
+        <View style={styles.sessionBanner}>
+          <Text style={styles.sessionBannerText}>
+            🎤 今日の記録
+          </Text>
+          <View style={styles.sessionBannerStats}>
+            <Text style={styles.sessionBannerNum}>{sessionSummary.song_count}</Text>
+            <Text style={styles.sessionBannerLabel}>曲</Text>
+          </View>
+          {sessionSummary.pb_count > 0 && (
+            <>
+              <Text style={styles.sessionBannerSep}>／</Text>
+              <Text style={styles.sessionBannerPbIcon}>🎉</Text>
+              <View style={styles.sessionBannerStats}>
+                <Text style={styles.sessionBannerNum}>{sessionSummary.pb_count}</Text>
+                <Text style={styles.sessionBannerLabel}>曲ベスト更新</Text>
+              </View>
+            </>
+          )}
+        </View>
+      )}
 
       {/* タブ横スクロール */}
       <ScrollView
@@ -215,6 +256,7 @@ export default function HomeScreen() {
           onSaved={() => {
             setScoringsSong(null);
             reload();
+            reloadSessionSummary();
           }}
         />
       )}
@@ -279,6 +321,48 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: colors.white,
     lineHeight: 24,
+  },
+  sessionBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginHorizontal: 18,
+    marginBottom: 8,
+    backgroundColor: colors.accentSoft,
+    borderWidth: 1.5,
+    borderColor: 'rgba(91, 76, 245, 0.15)',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  sessionBannerText: {
+    fontSize: 11,
+    color: colors.accent,
+    fontWeight: '600',
+    marginRight: 4,
+  },
+  sessionBannerStats: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 2,
+  },
+  sessionBannerNum: {
+    fontFamily: 'DMMono_500Medium',
+    fontSize: 14,
+    color: colors.accent,
+    fontWeight: '700',
+  },
+  sessionBannerLabel: {
+    fontSize: 10,
+    color: colors.accent,
+  },
+  sessionBannerSep: {
+    fontSize: 10,
+    color: colors.text3,
+    marginHorizontal: 2,
+  },
+  sessionBannerPbIcon: {
+    fontSize: 12,
   },
   tabScroll: {
     flexGrow: 0,
