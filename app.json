@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Mykara",
+    "name": "歌帳",
     "slug": "Mykara",
     "version": "1.0.0",
     "scheme": "mykara",
@@ -13,11 +13,11 @@
       "backgroundColor": "#f0f2f7"
     },
     "ios": {
-      "bundleIdentifier": "com.rengemaru.mykara",
+      "bundleIdentifier": "com.rengemaru.utacho",
       "supportsTablet": false
     },
     "android": {
-      "package": "com.rengemaru.mykara",
+      "package": "com.rengemaru.utacho",
       "versionCode": 1,
       "permissions": ["android.permission.INTERNET"],
       "adaptiveIcon": {
