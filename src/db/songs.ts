@@ -1,23 +1,15 @@
 import { getDb } from './client';
 import { SongRow, SongWithStats, TabRow } from '../types';
 
-export function getAllSongsCount(): number {
-  const result = getDb().getFirstSync<{ count: number }>('SELECT COUNT(*) AS count FROM songs');
-  return result?.count ?? 0;
-}
+const STATS_SUBQUERIES = `
+  MAX(sc.score) AS best_score,
+  (SELECT score FROM scores WHERE song_id = s.id ORDER BY scored_at DESC, id DESC LIMIT 1) AS latest_score,
+  (SELECT score FROM scores WHERE song_id = s.id ORDER BY scored_at ASC,  id ASC  LIMIT 1) AS first_score,
+  (SELECT scored_at FROM scores WHERE song_id = s.id ORDER BY scored_at DESC, id DESC LIMIT 1) AS latest_scored_at,
+  COUNT(sc.id) AS score_count
+`;
 
-export function getAllSongs(): SongWithStats[] {
-  const songs = getDb().getAllSync<SongRow & { best_score: number | null; latest_score: number | null; score_count: number }>(`
-    SELECT
-      s.*,
-      MAX(sc.score)  AS best_score,
-      (SELECT score FROM scores WHERE song_id = s.id ORDER BY scored_at DESC LIMIT 1) AS latest_score,
-      COUNT(sc.id)   AS score_count
-    FROM songs s
-    LEFT JOIN scores sc ON sc.song_id = s.id
-    GROUP BY s.id
-    ORDER BY s.created_at DESC
-  `);
+function attachTabs(songs: (SongRow & { best_score: number | null; latest_score: number | null; first_score: number | null; latest_scored_at: string | null; score_count: number })[]): SongWithStats[] {
   return songs.map((song) => ({
     ...song,
     tabs: getDb().getAllSync<TabRow>(
@@ -27,13 +19,25 @@ export function getAllSongs(): SongWithStats[] {
   }));
 }
 
+export function getAllSongsCount(): number {
+  const result = getDb().getFirstSync<{ count: number }>('SELECT COUNT(*) AS count FROM songs');
+  return result?.count ?? 0;
+}
+
+export function getAllSongs(): SongWithStats[] {
+  const songs = getDb().getAllSync<SongRow & { best_score: number | null; latest_score: number | null; first_score: number | null; latest_scored_at: string | null; score_count: number }>(`
+    SELECT s.*, ${STATS_SUBQUERIES}
+    FROM songs s
+    LEFT JOIN scores sc ON sc.song_id = s.id
+    GROUP BY s.id
+    ORDER BY s.created_at DESC
+  `);
+  return attachTabs(songs);
+}
+
 export function getSongsByTab(tabId: number): SongWithStats[] {
-  const songs = getDb().getAllSync<SongRow & { best_score: number | null; latest_score: number | null; score_count: number }>(`
-    SELECT
-      s.*,
-      MAX(sc.score)  AS best_score,
-      (SELECT score FROM scores WHERE song_id = s.id ORDER BY scored_at DESC LIMIT 1) AS latest_score,
-      COUNT(sc.id)   AS score_count
+  const songs = getDb().getAllSync<SongRow & { best_score: number | null; latest_score: number | null; first_score: number | null; latest_scored_at: string | null; score_count: number }>(`
+    SELECT s.*, ${STATS_SUBQUERIES}
     FROM songs s
     JOIN song_tabs st ON st.song_id = s.id
     LEFT JOIN scores sc ON sc.song_id = s.id
@@ -41,22 +45,26 @@ export function getSongsByTab(tabId: number): SongWithStats[] {
     GROUP BY s.id
     ORDER BY s.created_at DESC
   `, [tabId]);
-  return songs.map((song) => ({
-    ...song,
-    tabs: getDb().getAllSync<TabRow>(
-      'SELECT t.* FROM tabs t JOIN song_tabs st ON st.tab_id = t.id WHERE st.song_id = ?',
-      [song.id]
-    ),
-  }));
+  return attachTabs(songs);
+}
+
+export function getSongsByIds(ids: number[]): SongWithStats[] {
+  if (ids.length === 0) return [];
+  const placeholders = ids.map(() => '?').join(',');
+  const songs = getDb().getAllSync<SongRow & { best_score: number | null; latest_score: number | null; first_score: number | null; latest_scored_at: string | null; score_count: number }>(`
+    SELECT s.*, ${STATS_SUBQUERIES}
+    FROM songs s
+    LEFT JOIN scores sc ON sc.song_id = s.id
+    WHERE s.id IN (${placeholders})
+    GROUP BY s.id
+    ORDER BY s.created_at DESC
+  `, ids);
+  return attachTabs(songs);
 }
 
 export function getSongById(id: number): SongWithStats | null {
-  const song = getDb().getFirstSync<SongRow & { best_score: number | null; latest_score: number | null; score_count: number }>(`
-    SELECT
-      s.*,
-      MAX(sc.score)  AS best_score,
-      (SELECT score FROM scores WHERE song_id = s.id ORDER BY scored_at DESC LIMIT 1) AS latest_score,
-      COUNT(sc.id)   AS score_count
+  const song = getDb().getFirstSync<SongRow & { best_score: number | null; latest_score: number | null; first_score: number | null; latest_scored_at: string | null; score_count: number }>(`
+    SELECT s.*, ${STATS_SUBQUERIES}
     FROM songs s
     LEFT JOIN scores sc ON sc.song_id = s.id
     WHERE s.id = ?

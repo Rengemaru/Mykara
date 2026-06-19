@@ -3,6 +3,7 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   FlatList,
+  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -15,46 +16,118 @@ import { Swipeable } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EmptyState } from '../../src/components/EmptyState';
 import { ScoreBottomSheet } from '../../src/components/ScoreBottomSheet';
+import { SetlistModal } from '../../src/components/SetlistModal';
 import { SongCard } from '../../src/components/SongCard';
 import { colors } from '../../src/constants/colors';
 import { fonts } from '../../src/constants/fonts';
-import { deleteSong } from '../../src/db/songs';
-import { getSessionSummary, SessionSummary } from '../../src/db/scores';
-import { useSongs, ALL_TAB } from '../../src/hooks/useSongs';
+import { deleteSong, getAllSongs } from '../../src/db/songs';
+import { getSessionSummary, getMonthlyStats, SessionSummary, MonthlyStats } from '../../src/db/scores';
+import { getSetlistSongIds, saveSetlistSongIds } from '../../src/db/settings';
+import { useSongs, ALL_TAB, SETLIST_TAB } from '../../src/hooks/useSongs';
 import { useTabs } from '../../src/hooks/useTabs';
 import { SongWithStats } from '../../src/types';
+
+type SortKey = 'created_at' | 'best_score' | 'score_count' | 'latest_scored_at' | 'improvement';
+
+const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+  { key: 'created_at',      label: '登録日（新しい順）' },
+  { key: 'best_score',      label: '最高スコア順' },
+  { key: 'score_count',     label: '記録回数順' },
+  { key: 'latest_scored_at', label: '最終記録日（古い順）' },
+  { key: 'improvement',     label: 'スコア伸び率順' },
+];
+
+function sortSongs(songs: SongWithStats[], key: SortKey): SongWithStats[] {
+  if (key === 'created_at') return songs;
+  return [...songs].sort((a, b) => {
+    switch (key) {
+      case 'best_score':
+        return (b.best_score ?? -1) - (a.best_score ?? -1);
+      case 'score_count':
+        return b.score_count - a.score_count;
+      case 'latest_scored_at': {
+        if (!a.latest_scored_at && !b.latest_scored_at) return 0;
+        if (!a.latest_scored_at) return 1;
+        if (!b.latest_scored_at) return -1;
+        return a.latest_scored_at.localeCompare(b.latest_scored_at);
+      }
+      case 'improvement': {
+        const ai = a.latest_score != null && a.first_score != null ? a.latest_score - a.first_score : -999;
+        const bi = b.latest_score != null && b.first_score != null ? b.latest_score - b.first_score : -999;
+        return bi - ai;
+      }
+    }
+  });
+}
+
+function localDateString(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function currentYearMonth(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { tabsWithAll, reload: reloadTabs } = useTabs();
   const [activeTabId, setActiveTabId] = useState<number>(ALL_TAB.id);
   const [query, setQuery] = useState('');
+  const [sortKey, setSortKey] = useState<SortKey>('created_at');
+  const [sortModalVisible, setSortModalVisible] = useState(false);
+  const [setlistIds, setSetlistIds] = useState<number[]>([]);
+  const [setlistModalVisible, setSetlistModalVisible] = useState(false);
+  const [allSongsForSetlist, setAllSongsForSetlist] = useState<SongWithStats[]>([]);
+  const [sessionSummary, setSessionSummary] = useState<SessionSummary | null>(null);
+  const [monthlyStats, setMonthlyStats] = useState<MonthlyStats | null>(null);
+
   const { songs, loading, error, reload } = useSongs(activeTabId);
+
+  const swipeRefs = useRef<Map<number, Swipeable | null>>(new Map());
+  const [scoringSong, setScoringsSong] = useState<SongWithStats | null>(null);
+
+  function reloadExtras() {
+    if (Platform.OS === 'web') return;
+    try {
+      const today = localDateString();
+      const ids = getSetlistSongIds(today);
+      setSetlistIds(ids);
+
+      const summary = getSessionSummary(today);
+      setSessionSummary(summary.song_count > 0 ? summary : null);
+
+      const monthly = getMonthlyStats(currentYearMonth());
+      setMonthlyStats(monthly.record_count > 0 ? monthly : null);
+    } catch (e) {
+      console.error(e);
+    }
+  }
 
   useFocusEffect(
     useCallback(() => {
       reloadTabs();
       reload();
-      reloadSessionSummary();
+      reloadExtras();
     }, [reloadTabs, reload])
   );
-  const [scoringSong, setScoringsSong] = useState<SongWithStats | null>(null);
-  const [sessionSummary, setSessionSummary] = useState<SessionSummary | null>(null);
-  const swipeRefs = useRef<Map<number, Swipeable | null>>(new Map());
 
-  function todayString() {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  function openSetlistModal() {
+    if (Platform.OS !== 'web') {
+      setAllSongsForSetlist(getAllSongs());
+    }
+    setSetlistModalVisible(true);
   }
 
-  function reloadSessionSummary() {
-    if (Platform.OS === 'web') return;
-    try {
-      const summary = getSessionSummary(todayString());
-      setSessionSummary(summary.song_count > 0 ? summary : null);
-    } catch (e) {
-      console.error(e);
+  function handleSaveSetlist(ids: number[]) {
+    saveSetlistSongIds(localDateString(), ids);
+    setSetlistIds(ids);
+    reloadTabs();
+    if (activeTabId === SETLIST_TAB.id && ids.length === 0) {
+      setActiveTabId(ALL_TAB.id);
     }
+    reload();
   }
 
   function closeOtherSwipeables(currentId: number) {
@@ -77,6 +150,8 @@ export default function HomeScreen() {
             try {
               deleteSong(song.id);
               reload();
+              reloadTabs();
+              reloadExtras();
             } catch (e) {
               console.error(e);
               Alert.alert('エラー', '削除に失敗しました');
@@ -88,14 +163,25 @@ export default function HomeScreen() {
   }
 
   const filtered = useMemo(() => {
-    if (!query.trim()) return songs;
-    const q = query.toLowerCase();
-    return songs.filter(
-      (s) =>
-        s.title.toLowerCase().includes(q) ||
-        s.artist.toLowerCase().includes(q)
-    );
-  }, [songs, query]);
+    const q = query.toLowerCase().trim();
+    const base = q
+      ? songs.filter((s) => s.title.toLowerCase().includes(q) || s.artist.toLowerCase().includes(q))
+      : songs;
+    return sortSongs(base, sortKey);
+  }, [songs, query, sortKey]);
+
+  // セットリストタブを先頭に追加（今日の分が存在する場合）
+  const visibleTabs = useMemo(() => {
+    if (setlistIds.length > 0) {
+      return [
+        { ...SETLIST_TAB, song_count: setlistIds.length },
+        ...tabsWithAll,
+      ];
+    }
+    return tabsWithAll;
+  }, [tabsWithAll, setlistIds]);
+
+  const currentSortLabel = SORT_OPTIONS.find((o) => o.key === sortKey)?.label ?? '';
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
@@ -104,10 +190,21 @@ export default function HomeScreen() {
         <Text style={styles.appTitle}>歌帳</Text>
         <View style={styles.headerActions}>
           <TouchableOpacity
+            style={styles.setlistBtn}
+            onPress={openSetlistModal}
+            accessibilityLabel="今日のセットリスト"
+          >
+            <Text style={styles.setlistBtnText}>📋</Text>
+            {setlistIds.length > 0 && (
+              <View style={styles.setlistBadge}>
+                <Text style={styles.setlistBadgeText}>{setlistIds.length}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity
             style={styles.helpBtn}
             onPress={() => router.push('/help')}
             accessibilityLabel="ヘルプ"
-            accessibilityRole="button"
           >
             <Text style={styles.helpBtnText}>？</Text>
           </TouchableOpacity>
@@ -123,9 +220,7 @@ export default function HomeScreen() {
       {/* セッションサマリーバナー */}
       {sessionSummary && (
         <View style={styles.sessionBanner}>
-          <Text style={styles.sessionBannerText}>
-            🎤 今日の記録
-          </Text>
+          <Text style={styles.sessionBannerText}>🎤 今日の記録</Text>
           <View style={styles.sessionBannerStats}>
             <Text style={styles.sessionBannerNum}>{sessionSummary.song_count}</Text>
             <Text style={styles.sessionBannerLabel}>曲</Text>
@@ -143,6 +238,16 @@ export default function HomeScreen() {
         </View>
       )}
 
+      {/* 月次統計バー */}
+      {monthlyStats && !sessionSummary && (
+        <View style={styles.monthlyBar}>
+          <Text style={styles.monthlyText}>
+            📅 今月 {monthlyStats.record_count}回記録
+            {monthlyStats.pb_count > 0 ? ` · ベスト更新${monthlyStats.pb_count}曲` : ''}
+          </Text>
+        </View>
+      )}
+
       {/* タブ横スクロール */}
       <ScrollView
         horizontal
@@ -150,18 +255,28 @@ export default function HomeScreen() {
         style={styles.tabScroll}
         contentContainerStyle={styles.tabScrollContent}
       >
-        {tabsWithAll.map((tab) => {
+        {visibleTabs.map((tab) => {
           const isActive = activeTabId === tab.id;
+          const isSetlist = tab.id === SETLIST_TAB.id;
           return (
             <TouchableOpacity
               key={tab.id}
-              style={[styles.tabPill, isActive && styles.tabPillActive]}
+              style={[
+                styles.tabPill,
+                isActive && styles.tabPillActive,
+                isSetlist && styles.tabPillSetlist,
+                isActive && isSetlist && styles.tabPillSetlistActive,
+              ]}
               onPress={() => setActiveTabId(tab.id)}
             >
-              <Text style={[styles.tabPillText, isActive && styles.tabPillTextActive]}>
-                {tab.name}
+              <Text style={[
+                styles.tabPillText,
+                isActive && styles.tabPillTextActive,
+                isSetlist && styles.tabPillTextSetlist,
+              ]}>
+                {isSetlist ? '📋 ' : ''}{tab.name}
               </Text>
-              <View style={[styles.tabBadge, isActive && styles.tabBadgeActive]}>
+              <View style={[styles.tabBadge, isActive && styles.tabBadgeActive, isSetlist && styles.tabBadgeSetlist]}>
                 <Text style={[styles.tabBadgeText, isActive && styles.tabBadgeTextActive]}>
                   {tab.song_count}
                 </Text>
@@ -171,17 +286,30 @@ export default function HomeScreen() {
         })}
       </ScrollView>
 
-      {/* 検索バー */}
-      <View style={styles.searchBar}>
-        <Text style={styles.searchIcon}>🔍</Text>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="曲名・アーティスト名で検索"
-          placeholderTextColor={colors.text3}
-          value={query}
-          onChangeText={setQuery}
-        />
+      {/* 検索バー + ソートボタン */}
+      <View style={styles.searchRow}>
+        <View style={styles.searchBar}>
+          <Text style={styles.searchIcon}>🔍</Text>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="曲名・アーティスト名で検索"
+            placeholderTextColor={colors.text3}
+            value={query}
+            onChangeText={setQuery}
+          />
+        </View>
+        <TouchableOpacity
+          style={[styles.sortBtn, sortKey !== 'created_at' && styles.sortBtnActive]}
+          onPress={() => setSortModalVisible(true)}
+        >
+          <Text style={[styles.sortBtnText, sortKey !== 'created_at' && styles.sortBtnTextActive]}>⇅</Text>
+        </TouchableOpacity>
       </View>
+
+      {/* ソートラベル（デフォルト以外の時のみ） */}
+      {sortKey !== 'created_at' && (
+        <Text style={styles.sortLabel}>{currentSortLabel}</Text>
+      )}
 
       {/* 曲一覧 */}
       {error ? (
@@ -256,19 +384,55 @@ export default function HomeScreen() {
           onSaved={() => {
             setScoringsSong(null);
             reload();
-            reloadSessionSummary();
+            reloadExtras();
           }}
         />
       )}
+
+      {/* ソート選択モーダル */}
+      <Modal
+        visible={sortModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSortModalVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.sortOverlay}
+          activeOpacity={1}
+          onPress={() => setSortModalVisible(false)}
+        >
+          <View style={styles.sortSheet}>
+            <Text style={styles.sortSheetTitle}>並び替え</Text>
+            {SORT_OPTIONS.map((opt) => (
+              <TouchableOpacity
+                key={opt.key}
+                style={[styles.sortOption, sortKey === opt.key && styles.sortOptionActive]}
+                onPress={() => { setSortKey(opt.key); setSortModalVisible(false); }}
+              >
+                <Text style={[styles.sortOptionText, sortKey === opt.key && styles.sortOptionTextActive]}>
+                  {opt.label}
+                </Text>
+                {sortKey === opt.key && <Text style={styles.sortOptionCheck}>✓</Text>}
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* セットリスト選択モーダル */}
+      <SetlistModal
+        visible={setlistModalVisible}
+        songs={allSongsForSetlist}
+        selectedIds={setlistIds}
+        onSave={handleSaveSetlist}
+        onClose={() => setSetlistModalVisible(false)}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.bg,
-  },
+  screen: { flex: 1, backgroundColor: colors.bg },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -288,6 +452,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
+  setlistBtn: {
+    width: 34,
+    height: 34,
+    backgroundColor: colors.surface2,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: colors.border,
+  },
+  setlistBtnText: { fontSize: 16, lineHeight: 20 },
+  setlistBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: colors.green,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+  },
+  setlistBadgeText: { fontSize: 9, color: colors.white, fontWeight: '700' },
   helpBtn: {
     width: 34,
     height: 34,
@@ -317,11 +505,7 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 4,
   },
-  addBtnText: {
-    fontSize: 20,
-    color: colors.white,
-    lineHeight: 24,
-  },
+  addBtnText: { fontSize: 20, color: colors.white, lineHeight: 24 },
   sessionBanner: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -335,38 +519,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 7,
   },
-  sessionBannerText: {
-    fontSize: 11,
-    color: colors.accent,
-    fontWeight: '600',
-    marginRight: 4,
+  sessionBannerText: { fontSize: 11, color: colors.accent, fontWeight: '600', marginRight: 4 },
+  sessionBannerStats: { flexDirection: 'row', alignItems: 'baseline', gap: 2 },
+  sessionBannerNum: { fontFamily: 'DMMono_500Medium', fontSize: 14, color: colors.accent, fontWeight: '700' },
+  sessionBannerLabel: { fontSize: 10, color: colors.accent },
+  sessionBannerSep: { fontSize: 10, color: colors.text3, marginHorizontal: 2 },
+  sessionBannerPbIcon: { fontSize: 12 },
+  monthlyBar: {
+    marginHorizontal: 18,
+    marginBottom: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: colors.surface,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
-  sessionBannerStats: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 2,
-  },
-  sessionBannerNum: {
-    fontFamily: 'DMMono_500Medium',
-    fontSize: 14,
-    color: colors.accent,
-    fontWeight: '700',
-  },
-  sessionBannerLabel: {
-    fontSize: 10,
-    color: colors.accent,
-  },
-  sessionBannerSep: {
-    fontSize: 10,
-    color: colors.text3,
-    marginHorizontal: 2,
-  },
-  sessionBannerPbIcon: {
-    fontSize: 12,
-  },
-  tabScroll: {
-    flexGrow: 0,
-  },
+  monthlyText: { fontSize: 11, color: colors.text2 },
+  tabScroll: { flexGrow: 0 },
   tabScrollContent: {
     paddingHorizontal: 18,
     paddingBottom: 10,
@@ -374,7 +544,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   tabPill: {
-    paddingHorizontal: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 20,
     backgroundColor: colors.surface2,
@@ -385,41 +558,38 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accentSoft,
     borderColor: 'rgba(91, 76, 245, 0.2)',
   },
-  tabPillText: {
-    fontSize: 11,
-    fontWeight: '500',
-    color: colors.text2,
+  tabPillSetlist: {
+    backgroundColor: 'rgba(0, 185, 107, 0.08)',
+    borderColor: 'rgba(0, 185, 107, 0.2)',
   },
-  tabPillTextActive: {
-    color: colors.accent,
+  tabPillSetlistActive: {
+    backgroundColor: 'rgba(0, 185, 107, 0.15)',
+    borderColor: 'rgba(0, 185, 107, 0.4)',
   },
+  tabPillText: { fontSize: 11, fontWeight: '500', color: colors.text2 },
+  tabPillTextActive: { color: colors.accent },
+  tabPillTextSetlist: { color: colors.green },
   tabBadge: {
-    minWidth: 16,
-    height: 16,
-    borderRadius: 8,
+    minWidth: 16, height: 16, borderRadius: 8,
     backgroundColor: colors.surface2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 4,
+    alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4,
   },
-  tabBadgeActive: {
-    backgroundColor: 'rgba(91, 76, 245, 0.15)',
-  },
-  tabBadgeText: {
-    fontSize: 9,
-    fontWeight: '700',
-    color: colors.text3,
-    lineHeight: 14,
-  },
-  tabBadgeTextActive: {
-    color: colors.accent,
-  },
-  searchBar: {
+  tabBadgeActive: { backgroundColor: 'rgba(91, 76, 245, 0.15)' },
+  tabBadgeSetlist: { backgroundColor: 'rgba(0, 185, 107, 0.15)' },
+  tabBadgeText: { fontSize: 9, fontWeight: '700', color: colors.text3, lineHeight: 14 },
+  tabBadgeTextActive: { color: colors.accent },
+  searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     marginHorizontal: 18,
-    marginBottom: 10,
+    marginBottom: 4,
+  },
+  searchBar: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     backgroundColor: colors.surface,
     borderWidth: 1.5,
     borderColor: colors.border,
@@ -427,31 +597,34 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 9,
   },
-  searchIcon: {
-    fontSize: 12,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 12,
-    color: colors.text,
-  },
-  list: {
-    paddingHorizontal: 18,
-    paddingBottom: 100,
-    gap: 7,
-  },
-  center: {
-    flex: 1,
+  searchIcon: { fontSize: 12 },
+  searchInput: { flex: 1, fontSize: 12, color: colors.text },
+  sortBtn: {
+    width: 36,
+    height: 36,
+    backgroundColor: colors.surface,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
   },
-  swipeActions: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
-    paddingLeft: 8,
-    gap: 6,
+  sortBtnActive: {
+    backgroundColor: colors.accentSoft,
+    borderColor: 'rgba(91, 76, 245, 0.3)',
   },
+  sortBtnText: { fontSize: 16, color: colors.text2 },
+  sortBtnTextActive: { color: colors.accent },
+  sortLabel: {
+    fontSize: 10,
+    color: colors.accent,
+    marginHorizontal: 18,
+    marginBottom: 6,
+    fontWeight: '500',
+  },
+  list: { paddingHorizontal: 18, paddingBottom: 100, gap: 7 },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
+  swipeActions: { flexDirection: 'row', alignItems: 'stretch', paddingLeft: 8, gap: 6 },
   swipeBtn: {
     justifyContent: 'center',
     alignItems: 'center',
@@ -459,17 +632,39 @@ const styles = StyleSheet.create({
     minWidth: 64,
     paddingHorizontal: 10,
   },
-  swipeEditBtn: {
-    backgroundColor: colors.accent,
+  swipeEditBtn: { backgroundColor: colors.accent },
+  swipeDeleteBtn: { backgroundColor: colors.red, marginRight: 0 },
+  swipeBtnText: { color: colors.white, fontSize: 11, fontWeight: '700', textAlign: 'center' },
+  sortOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
   },
-  swipeDeleteBtn: {
-    backgroundColor: colors.red,
-    marginRight: 0,
+  sortSheet: {
+    backgroundColor: colors.white,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingTop: 16,
+    paddingBottom: 40,
+    paddingHorizontal: 18,
   },
-  swipeBtnText: {
-    color: colors.white,
-    fontSize: 11,
+  sortSheetTitle: {
+    fontSize: 13,
     fontWeight: '700',
+    color: colors.text2,
+    marginBottom: 12,
     textAlign: 'center',
   },
+  sortOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 13,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  sortOptionActive: {},
+  sortOptionText: { fontSize: 14, color: colors.text },
+  sortOptionTextActive: { color: colors.accent, fontWeight: '600' },
+  sortOptionCheck: { fontSize: 16, color: colors.accent },
 });

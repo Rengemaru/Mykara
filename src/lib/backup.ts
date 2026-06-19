@@ -69,6 +69,47 @@ export async function exportBackup(): Promise<void> {
   });
 }
 
+// ---- CSV エクスポート ----
+
+export async function exportCSV(): Promise<void> {
+  const db = getDb();
+  const rows = db.getAllSync<{
+    title: string; artist: string; key_offset: number | null;
+    score: number; scored_at: string; machine: string;
+  }>(`
+    SELECT s.title, s.artist, s.key_offset, sc.score, sc.scored_at, sc.machine
+    FROM scores sc
+    JOIN songs s ON s.id = sc.song_id
+    ORDER BY s.title ASC, sc.scored_at ASC
+  `);
+
+  const escape = (v: string) => `"${v.replace(/"/g, '""')}"`;
+  const header = '曲名,アーティスト,キー,点数,日付,機種';
+  const csvRows = rows.map((r) => [
+    escape(r.title),
+    escape(r.artist),
+    r.key_offset != null ? (r.key_offset >= 0 ? `+${r.key_offset}` : String(r.key_offset)) : '',
+    r.score.toFixed(3),
+    r.scored_at,
+    r.machine,
+  ].join(','));
+
+  const csv = [header, ...csvRows].join('\n');
+
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const ts = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
+  const filename = `utacho-scores-${ts}.csv`;
+
+  const file = new File(Paths.cache, filename);
+  file.write(csv);
+
+  await Sharing.shareAsync(file.uri, {
+    mimeType: 'text/csv',
+    dialogTitle: 'CSVを保存',
+  });
+}
+
 // ---- インポート ----
 
 /** ファイルピッカーを開いてバックアップJSONを読み込む。キャンセル時は null を返す */

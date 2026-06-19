@@ -39,6 +39,8 @@ export interface ScoreRow {
 export interface SongWithStats extends SongRow {
   best_score: number | null;
   latest_score: number | null;
+  first_score: number | null;
+  latest_scored_at: string | null;
   score_count: number;
   tabs: TabRow[];
 }

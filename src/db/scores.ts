@@ -1,6 +1,52 @@
 import { getDb } from './client';
 import { ScoreRow } from '../types';
 
+export interface MonthlyStats {
+  record_count: number;
+  pb_count: number;
+}
+
+export function getMonthlyStats(yearMonth: string): MonthlyStats {
+  const countRow = getDb().getFirstSync<{ count: number }>(
+    "SELECT COUNT(*) AS count FROM scores WHERE scored_at LIKE ?",
+    [yearMonth + '%']
+  );
+  const pbRow = getDb().getFirstSync<{ pb_count: number }>(`
+    SELECT COUNT(*) AS pb_count
+    FROM (
+      SELECT song_id, MAX(score) AS month_best
+      FROM scores WHERE scored_at LIKE ?
+      GROUP BY song_id
+    ) month_scores
+    JOIN (
+      SELECT song_id, MAX(score) AS all_time_best
+      FROM scores GROUP BY song_id
+    ) all_time ON month_scores.song_id = all_time.song_id
+    WHERE month_scores.month_best >= all_time.all_time_best
+  `, [yearMonth + '%']);
+  return {
+    record_count: countRow?.count ?? 0,
+    pb_count: pbRow?.pb_count ?? 0,
+  };
+}
+
+export interface KeyScoreStat {
+  key_offset: number;
+  avg_score: number;
+  count: number;
+}
+
+export function getKeyScoreStats(): KeyScoreStat[] {
+  return getDb().getAllSync<KeyScoreStat>(`
+    SELECT s.key_offset, ROUND(AVG(sc.score), 1) AS avg_score, COUNT(sc.id) AS count
+    FROM songs s
+    JOIN scores sc ON sc.song_id = s.id
+    WHERE s.key_offset IS NOT NULL
+    GROUP BY s.key_offset
+    ORDER BY s.key_offset ASC
+  `);
+}
+
 export interface SessionSummary {
   song_count: number;
   pb_count: number;
