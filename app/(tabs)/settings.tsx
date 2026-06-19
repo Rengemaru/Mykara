@@ -1,6 +1,6 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Alert, ActivityIndicator, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, ActivityIndicator, Linking, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../src/constants/colors';
 import { fonts } from '../../src/constants/fonts';
@@ -209,6 +209,26 @@ export default function SettingsScreen() {
           </View>
         </View>
 
+        {/* ヘルプ */}
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>サポート</Text>
+          <View style={styles.group}>
+            <TouchableOpacity
+              style={[styles.row, styles.rowNoBorder]}
+              onPress={() => router.push('/help')}
+            >
+              <View style={[styles.rowIcon, styles.iconPurple]}>
+                <Text style={styles.rowEmoji}>❓</Text>
+              </View>
+              <View style={styles.rowText}>
+                <Text style={styles.rowLabel}>ヘルプ</Text>
+                <Text style={styles.rowSub}>使い方・よくある質問・お問い合わせ</Text>
+              </View>
+              <Text style={styles.rowChevron}>›</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
         {/* アプリ情報 */}
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>アプリ情報</Text>
@@ -222,7 +242,22 @@ export default function SettingsScreen() {
               </View>
               <Text style={styles.rowValue}>1.0.0</Text>
             </View>
-            <View style={[styles.row, styles.rowNoBorder]}>
+            <TouchableOpacity
+              style={styles.row}
+              onPress={() => Linking.openURL('https://rengemaru.github.io/Utacho/terms-of-use.html')}
+            >
+              <View style={[styles.rowIcon, styles.iconGray]}>
+                <Text style={styles.rowEmoji}>📋</Text>
+              </View>
+              <View style={styles.rowText}>
+                <Text style={styles.rowLabel}>利用規約</Text>
+              </View>
+              <Text style={styles.rowChevron}>›</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.row, styles.rowNoBorder]}
+              onPress={() => Linking.openURL('https://rengemaru.github.io/Utacho/privacy-policy.html')}
+            >
               <View style={[styles.rowIcon, styles.iconGray]}>
                 <Text style={styles.rowEmoji}>📄</Text>
               </View>
@@ -230,7 +265,7 @@ export default function SettingsScreen() {
                 <Text style={styles.rowLabel}>プライバシーポリシー</Text>
               </View>
               <Text style={styles.rowChevron}>›</Text>
-            </View>
+            </TouchableOpacity>
           </View>
         </View>
       </ScrollView>

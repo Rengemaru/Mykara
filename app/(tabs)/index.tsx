@@ -84,12 +84,22 @@ export default function HomeScreen() {
       {/* ヘッダー */}
       <View style={styles.header}>
         <Text style={styles.appTitle}>歌帳</Text>
-        <TouchableOpacity
-          style={styles.addBtn}
-          onPress={() => router.push('/song/new')}
-        >
-          <Text style={styles.addBtnText}>＋</Text>
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity
+            style={styles.helpBtn}
+            onPress={() => router.push('/help')}
+            accessibilityLabel="ヘルプ"
+            accessibilityRole="button"
+          >
+            <Text style={styles.helpBtnText}>？</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.addBtn}
+            onPress={() => router.push('/song/new')}
+          >
+            <Text style={styles.addBtnText}>＋</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* タブ横スクロール */}
@@ -222,6 +232,27 @@ const styles = StyleSheet.create({
     fontSize: 22,
     letterSpacing: -0.4,
     color: colors.text,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  helpBtn: {
+    width: 34,
+    height: 34,
+    backgroundColor: colors.surface2,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: colors.border,
+  },
+  helpBtnText: {
+    fontSize: 15,
+    color: colors.accent,
+    fontWeight: '700',
+    lineHeight: 20,
   },
   addBtn: {
     width: 34,
