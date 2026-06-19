@@ -6,13 +6,12 @@ import { colors } from '../../src/constants/colors';
 import { fonts } from '../../src/constants/fonts';
 import { getDb } from '../../src/db/client';
 import { getDefaultMachine, type Machine } from '../../src/lib/machine';
-import { exportBackup, exportCSV, readBackupFile, restoreFromBackup } from '../../src/lib/backup';
+import { exportBackup, readBackupFile, restoreFromBackup } from '../../src/lib/backup';
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const [defaultMachine, setDefaultMachineState] = useState<Machine>('DAM');
   const [isExporting, setIsExporting] = useState(false);
-  const [isExportingCSV, setIsExportingCSV] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
 
   useFocusEffect(useCallback(() => {
@@ -33,22 +32,6 @@ export default function SettingsScreen() {
       Alert.alert('エラー', 'バックアップの書き出しに失敗しました');
     } finally {
       setIsExporting(false);
-    }
-  }
-
-  async function handleExportCSV() {
-    if (Platform.OS === 'web') {
-      Alert.alert('非対応', 'CSVの書き出しはモバイル端末でのみ使用できます');
-      return;
-    }
-    try {
-      setIsExportingCSV(true);
-      await exportCSV();
-    } catch (e) {
-      console.error(e);
-      Alert.alert('エラー', 'CSVの書き出しに失敗しました');
-    } finally {
-      setIsExportingCSV(false);
     }
   }
 
@@ -192,23 +175,6 @@ export default function SettingsScreen() {
                 <Text style={styles.rowSub}>全データをJSONファイルで書き出す</Text>
               </View>
               {isExporting
-                ? <ActivityIndicator size="small" color={colors.accent} />
-                : <Text style={styles.rowChevron}>›</Text>
-              }
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.row}
-              onPress={handleExportCSV}
-              disabled={isExportingCSV}
-            >
-              <View style={[styles.rowIcon, styles.iconPurple]}>
-                <Text style={styles.rowEmoji}>📊</Text>
-              </View>
-              <View style={styles.rowText}>
-                <Text style={styles.rowLabel}>CSVで書き出す</Text>
-                <Text style={styles.rowSub}>スコア履歴をCSVファイルで書き出す</Text>
-              </View>
-              {isExportingCSV
                 ? <ActivityIndicator size="small" color={colors.accent} />
                 : <Text style={styles.rowChevron}>›</Text>
               }
