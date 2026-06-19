@@ -7,6 +7,49 @@ interface Props {
   scores: ScoreRow[];
 }
 
+type ChartPoint = {
+  value: number;
+  label?: string;
+  dataPointColor?: string;
+  dataPointRadius?: number;
+};
+
+function buildChartData(
+  scoreRows: ScoreRow[],
+  baseColor: string
+): ChartPoint[] {
+  if (scoreRows.length === 0) return [];
+
+  const maxValue = Math.max(...scoreRows.map((s) => s.score));
+  const latestIndex = scoreRows.length - 1;
+
+  return scoreRows.map((s, i) => {
+    const isMax = s.score === maxValue;
+    const isLatest = i === latestIndex;
+
+    let dataPointColor = baseColor;
+    let dataPointRadius = 4;
+
+    if (isMax && isLatest) {
+      dataPointColor = colors.accent;
+      dataPointRadius = 6;
+    } else if (isMax) {
+      dataPointColor = colors.accent;
+      dataPointRadius = 6;
+    } else if (isLatest) {
+      dataPointColor = colors.green;
+      dataPointRadius = 5;
+    }
+
+    return {
+      value: s.score,
+      label: s.scored_at.slice(5).replace('-', '/'),
+      dataPointColor,
+      dataPointRadius,
+    };
+  });
+}
+
 export function ScoreChart({ scores }: Props) {
   const { width: screenWidth } = useWindowDimensions();
 
@@ -21,16 +64,13 @@ export function ScoreChart({ scores }: Props) {
   const minVal = Math.max(0, Math.floor(Math.min(...allValues)) - 5);
   const maxVal = Math.min(100, Math.ceil(Math.max(...allValues)) + 5);
 
-  const primaryScores = hasDam ? damScores : joyScores;
-  const primaryData = primaryScores.map((s) => ({
-    value: s.score,
-    label: s.scored_at.slice(5).replace('-', '/'),
-  }));
+  const primaryColor = hasDam ? colors.dam : colors.joy;
+  const primaryRows = hasDam ? damScores : joyScores;
+  const primaryData = buildChartData(primaryRows, primaryColor);
   const secondaryData = hasDam && hasJoy
-    ? joyScores.map((s) => ({ value: s.score }))
+    ? buildChartData(joyScores, colors.joy)
     : undefined;
 
-  const primaryColor = hasDam ? colors.dam : colors.joy;
   const chartWidth = screenWidth - 36 - 60;
 
   return (
