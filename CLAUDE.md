@@ -474,7 +474,7 @@ const colors = {
 
 #### 01 ホーム（曲一覧）
 
-- ヘッダー: `MyKara`（Plus Jakarta Sans / 22px / Bold）+ ＋ボタン（右上・アクセント背景）
+- ヘッダー: `歌帳`（Plus Jakarta Sans / 22px / Bold）+ ＋ボタン（右上・アクセント背景）
 - タブ: 横スクロール。「すべて」タブは先頭固定・削除不可
 - 検索バー: 曲名・アーティスト名でクライアントサイドフィルタリング
 - 曲カード構成:
@@ -1012,7 +1012,7 @@ export function useSongs(tabId: number) {
 |---|---|---|---|
 | 4-A | Google Play デベロッパーアカウント登録 | ⚠️ 要確認 | $25・承認に数日かかる場合あり |
 | 4-B | `google-services-key.json` の取得と配置 | ⚠️ 要確認 | Google Play Console → APIアクセス → サービスアカウント作成 → JSONキー配置 |
-| 4-C | Google Play Console でアプリ新規作成 | ⚠️ 要確認 | パッケージ名: `com.rengemaru.mykara` |
+| 4-C | Google Play Console でアプリ新規作成 | ⚠️ 要確認 | パッケージ名: `com.rengemaru.utacho` |
 | 4-D | ストア掲載素材の準備 | ⚠️ 要確認 | スクショ最低2枚・フィーチャーグラフィック1024×500px・説明文 |
 | 4-E | コンテンツレーティング（アンケート回答） | ⚠️ 要確認 | Google Play Console 内で完結 |
 | 4-F | プライバシーポリシーの作成・URL設定 | ⚠️ 要確認 | 審査で必須 |
@@ -1154,7 +1154,7 @@ drag-reorder機能のrevertと一緒に取り消されました。
 ```json
 {
   "android": {
-    "package": "com.rengemaru.mykara",
+    "package": "com.rengemaru.utacho",
     "versionCode": 1,
     "permissions": ["android.permission.INTERNET"],
     "adaptiveIcon": {
