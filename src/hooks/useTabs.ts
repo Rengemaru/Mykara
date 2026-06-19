@@ -1,12 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Platform } from 'react-native';
-import { TabRow } from '../types';
-import { getAllTabs } from '../db/tabs';
+import { TabWithCount } from '../types';
+import { getAllTabsWithCounts } from '../db/tabs';
+import { getAllSongsCount } from '../db/songs';
 import { ALL_TAB } from './useSongs';
-import { MOCK_TABS } from '../db/mockData';
+import { MOCK_TABS_WITH_COUNTS } from '../db/mockData';
 
 export function useTabs() {
-  const [tabs, setTabs] = useState<TabRow[]>([]);
+  const [tabs, setTabs] = useState<TabWithCount[]>([]);
+  const [totalSongsCount, setTotalSongsCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -14,13 +16,15 @@ export function useTabs() {
     try {
       setLoading(true);
       if (Platform.OS === 'web') {
-        setTabs(MOCK_TABS);
+        setTabs(MOCK_TABS_WITH_COUNTS);
+        setTotalSongsCount(5);
         setError(null);
         setLoading(false);
         return;
       }
-      const data = getAllTabs();
+      const data = getAllTabsWithCounts();
       setTabs(data);
+      setTotalSongsCount(getAllSongsCount());
       setError(null);
     } catch (e) {
       setError('タブの取得に失敗しました');
@@ -34,7 +38,10 @@ export function useTabs() {
     reload();
   }, [reload]);
 
-  const tabsWithAll = [ALL_TAB, ...tabs] as const;
+  const tabsWithAll = [
+    { ...ALL_TAB, song_count: totalSongsCount },
+    ...tabs,
+  ];
 
   return { tabs, tabsWithAll, loading, error, reload };
 }

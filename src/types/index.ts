@@ -23,6 +23,10 @@ export interface TabRow {
   sort_order: number;
 }
 
+export interface TabWithCount extends TabRow {
+  song_count: number;
+}
+
 export interface ScoreRow {
   id: number;
   song_id: number;

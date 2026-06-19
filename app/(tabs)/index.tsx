@@ -21,7 +21,7 @@ import { fonts } from '../../src/constants/fonts';
 import { deleteSong } from '../../src/db/songs';
 import { useSongs, ALL_TAB } from '../../src/hooks/useSongs';
 import { useTabs } from '../../src/hooks/useTabs';
-import { SongWithStats, TabRow } from '../../src/types';
+import { SongWithStats } from '../../src/types';
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
@@ -109,17 +109,25 @@ export default function HomeScreen() {
         style={styles.tabScroll}
         contentContainerStyle={styles.tabScrollContent}
       >
-        {(tabsWithAll as readonly (typeof ALL_TAB | TabRow)[]).map((tab) => (
-          <TouchableOpacity
-            key={tab.id}
-            style={[styles.tabPill, activeTabId === tab.id && styles.tabPillActive]}
-            onPress={() => setActiveTabId(tab.id)}
-          >
-            <Text style={[styles.tabPillText, activeTabId === tab.id && styles.tabPillTextActive]}>
-              {tab.name}
-            </Text>
-          </TouchableOpacity>
-        ))}
+        {tabsWithAll.map((tab) => {
+          const isActive = activeTabId === tab.id;
+          return (
+            <TouchableOpacity
+              key={tab.id}
+              style={[styles.tabPill, isActive && styles.tabPillActive]}
+              onPress={() => setActiveTabId(tab.id)}
+            >
+              <Text style={[styles.tabPillText, isActive && styles.tabPillTextActive]}>
+                {tab.name}
+              </Text>
+              <View style={[styles.tabBadge, isActive && styles.tabBadgeActive]}>
+                <Text style={[styles.tabBadgeText, isActive && styles.tabBadgeTextActive]}>
+                  {tab.song_count}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          );
+        })}
       </ScrollView>
 
       {/* 検索バー */}
@@ -299,6 +307,27 @@ const styles = StyleSheet.create({
     color: colors.text2,
   },
   tabPillTextActive: {
+    color: colors.accent,
+  },
+  tabBadge: {
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: colors.surface2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  tabBadgeActive: {
+    backgroundColor: 'rgba(91, 76, 245, 0.15)',
+  },
+  tabBadgeText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: colors.text3,
+    lineHeight: 14,
+  },
+  tabBadgeTextActive: {
     color: colors.accent,
   },
   searchBar: {
