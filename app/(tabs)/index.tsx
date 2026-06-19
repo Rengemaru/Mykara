@@ -19,9 +19,10 @@ import { SongCard } from '../../src/components/SongCard';
 import { colors } from '../../src/constants/colors';
 import { fonts } from '../../src/constants/fonts';
 import { deleteSong } from '../../src/db/songs';
+import { getSessionSummary, SessionSummary } from '../../src/db/scores';
 import { useSongs, ALL_TAB } from '../../src/hooks/useSongs';
 import { useTabs } from '../../src/hooks/useTabs';
-import { SongWithStats, TabRow } from '../../src/types';
+import { SongWithStats } from '../../src/types';
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
@@ -34,10 +35,27 @@ export default function HomeScreen() {
     useCallback(() => {
       reloadTabs();
       reload();
+      reloadSessionSummary();
     }, [reloadTabs, reload])
   );
   const [scoringSong, setScoringsSong] = useState<SongWithStats | null>(null);
+  const [sessionSummary, setSessionSummary] = useState<SessionSummary | null>(null);
   const swipeRefs = useRef<Map<number, Swipeable | null>>(new Map());
+
+  function todayString() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  function reloadSessionSummary() {
+    if (Platform.OS === 'web') return;
+    try {
+      const summary = getSessionSummary(todayString());
+      setSessionSummary(summary.song_count > 0 ? summary : null);
+    } catch (e) {
+      console.error(e);
+    }
+  }
 
   function closeOtherSwipeables(currentId: number) {
     swipeRefs.current.forEach((ref, id) => {
@@ -102,6 +120,29 @@ export default function HomeScreen() {
         </View>
       </View>
 
+      {/* セッションサマリーバナー */}
+      {sessionSummary && (
+        <View style={styles.sessionBanner}>
+          <Text style={styles.sessionBannerText}>
+            🎤 今日の記録
+          </Text>
+          <View style={styles.sessionBannerStats}>
+            <Text style={styles.sessionBannerNum}>{sessionSummary.song_count}</Text>
+            <Text style={styles.sessionBannerLabel}>曲</Text>
+          </View>
+          {sessionSummary.pb_count > 0 && (
+            <>
+              <Text style={styles.sessionBannerSep}>／</Text>
+              <Text style={styles.sessionBannerPbIcon}>🎉</Text>
+              <View style={styles.sessionBannerStats}>
+                <Text style={styles.sessionBannerNum}>{sessionSummary.pb_count}</Text>
+                <Text style={styles.sessionBannerLabel}>曲ベスト更新</Text>
+              </View>
+            </>
+          )}
+        </View>
+      )}
+
       {/* タブ横スクロール */}
       <ScrollView
         horizontal
@@ -109,17 +150,25 @@ export default function HomeScreen() {
         style={styles.tabScroll}
         contentContainerStyle={styles.tabScrollContent}
       >
-        {(tabsWithAll as readonly (typeof ALL_TAB | TabRow)[]).map((tab) => (
-          <TouchableOpacity
-            key={tab.id}
-            style={[styles.tabPill, activeTabId === tab.id && styles.tabPillActive]}
-            onPress={() => setActiveTabId(tab.id)}
-          >
-            <Text style={[styles.tabPillText, activeTabId === tab.id && styles.tabPillTextActive]}>
-              {tab.name}
-            </Text>
-          </TouchableOpacity>
-        ))}
+        {tabsWithAll.map((tab) => {
+          const isActive = activeTabId === tab.id;
+          return (
+            <TouchableOpacity
+              key={tab.id}
+              style={[styles.tabPill, isActive && styles.tabPillActive]}
+              onPress={() => setActiveTabId(tab.id)}
+            >
+              <Text style={[styles.tabPillText, isActive && styles.tabPillTextActive]}>
+                {tab.name}
+              </Text>
+              <View style={[styles.tabBadge, isActive && styles.tabBadgeActive]}>
+                <Text style={[styles.tabBadgeText, isActive && styles.tabBadgeTextActive]}>
+                  {tab.song_count}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          );
+        })}
       </ScrollView>
 
       {/* 検索バー */}
@@ -207,6 +256,7 @@ export default function HomeScreen() {
           onSaved={() => {
             setScoringsSong(null);
             reload();
+            reloadSessionSummary();
           }}
         />
       )}
@@ -272,6 +322,48 @@ const styles = StyleSheet.create({
     color: colors.white,
     lineHeight: 24,
   },
+  sessionBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginHorizontal: 18,
+    marginBottom: 8,
+    backgroundColor: colors.accentSoft,
+    borderWidth: 1.5,
+    borderColor: 'rgba(91, 76, 245, 0.15)',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  sessionBannerText: {
+    fontSize: 11,
+    color: colors.accent,
+    fontWeight: '600',
+    marginRight: 4,
+  },
+  sessionBannerStats: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 2,
+  },
+  sessionBannerNum: {
+    fontFamily: 'DMMono_500Medium',
+    fontSize: 14,
+    color: colors.accent,
+    fontWeight: '700',
+  },
+  sessionBannerLabel: {
+    fontSize: 10,
+    color: colors.accent,
+  },
+  sessionBannerSep: {
+    fontSize: 10,
+    color: colors.text3,
+    marginHorizontal: 2,
+  },
+  sessionBannerPbIcon: {
+    fontSize: 12,
+  },
   tabScroll: {
     flexGrow: 0,
   },
@@ -299,6 +391,27 @@ const styles = StyleSheet.create({
     color: colors.text2,
   },
   tabPillTextActive: {
+    color: colors.accent,
+  },
+  tabBadge: {
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: colors.surface2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  tabBadgeActive: {
+    backgroundColor: 'rgba(91, 76, 245, 0.15)',
+  },
+  tabBadgeText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: colors.text3,
+    lineHeight: 14,
+  },
+  tabBadgeTextActive: {
     color: colors.accent,
   },
   searchBar: {

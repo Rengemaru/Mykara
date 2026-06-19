@@ -1,8 +1,18 @@
 import { getDb } from './client';
-import { TabRow } from '../types';
+import { TabRow, TabWithCount } from '../types';
 
 export function getAllTabs(): TabRow[] {
   return getDb().getAllSync<TabRow>('SELECT * FROM tabs ORDER BY sort_order ASC');
+}
+
+export function getAllTabsWithCounts(): TabWithCount[] {
+  return getDb().getAllSync<TabWithCount>(`
+    SELECT t.*, COUNT(st.song_id) AS song_count
+    FROM tabs t
+    LEFT JOIN song_tabs st ON st.tab_id = t.id
+    GROUP BY t.id
+    ORDER BY t.sort_order ASC
+  `);
 }
 
 export function insertTab(name: string): number {

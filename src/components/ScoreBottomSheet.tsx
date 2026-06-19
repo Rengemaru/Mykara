@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Alert,
+  Animated,
   Modal,
   Platform,
   StyleSheet,
@@ -33,6 +34,8 @@ export function ScoreBottomSheet({ visible, song, editingScore, onClose, onSaved
   const [input, setInput] = useState('');
   const [date, setDate] = useState('');
   const [machine, setMachine] = useState<Machine>(currentMachine);
+  const [pbScore, setPbScore] = useState<number | null>(null);
+  const pbAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (visible) {
@@ -79,6 +82,19 @@ export function ScoreBottomSheet({ visible, song, editingScore, onClose, onSaved
     setInput(next);
   }
 
+  function showPBBanner(score: number) {
+    setPbScore(score);
+    pbAnim.setValue(0);
+    Animated.sequence([
+      Animated.spring(pbAnim, { toValue: 1, useNativeDriver: true, speed: 14, bounciness: 10 }),
+      Animated.delay(1400),
+      Animated.timing(pbAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
+    ]).start(() => {
+      setPbScore(null);
+      onSaved();
+    });
+  }
+
   async function handleSave() {
     const score = parseFloat(input);
     if (isNaN(score) || score < 0 || score > MAX_SCORE) {
@@ -96,11 +112,17 @@ export function ScoreBottomSheet({ visible, song, editingScore, onClose, onSaved
     try {
       if (editingScore) {
         updateScore(editingScore.id, score, date, machine);
+        onSaved();
       } else {
         await setCurrentMachine(machine);
         insertScore(song.id, score, date, machine);
+        const isNewPB = song.best_score === null || score > song.best_score;
+        if (isNewPB) {
+          showPBBanner(score);
+        } else {
+          onSaved();
+        }
       }
-      onSaved();
     } catch (e) {
       console.error(e);
       Alert.alert('エラー', '保存に失敗しました');
@@ -202,6 +224,25 @@ export function ScoreBottomSheet({ visible, song, editingScore, onClose, onSaved
             {isEdit ? '変更を保存する' : '記録する'}
           </Text>
         </TouchableOpacity>
+
+        {/* 自己ベスト更新バナー */}
+        {pbScore !== null && (
+          <Animated.View
+            style={[
+              styles.pbBanner,
+              {
+                opacity: pbAnim,
+                transform: [{ scale: pbAnim.interpolate({ inputRange: [0, 1], outputRange: [0.85, 1] }) }],
+              },
+            ]}
+          >
+            <Text style={styles.pbEmoji}>🎉</Text>
+            <View>
+              <Text style={styles.pbTitle}>自己ベスト更新！</Text>
+              <Text style={styles.pbScore}>{pbScore.toFixed(3)} 点</Text>
+            </View>
+          </Animated.View>
+        )}
       </View>
     </Modal>
   );
@@ -405,5 +446,38 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     color: colors.white,
+  },
+  pbBanner: {
+    position: 'absolute',
+    bottom: 80,
+    left: 18,
+    right: 18,
+    backgroundColor: colors.green,
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    shadowColor: colors.green,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  pbEmoji: {
+    fontSize: 28,
+  },
+  pbTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.white,
+  },
+  pbScore: {
+    fontFamily: fonts.monoMedium,
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.white,
+    letterSpacing: -0.5,
   },
 });

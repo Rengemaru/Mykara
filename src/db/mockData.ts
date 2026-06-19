@@ -1,9 +1,15 @@
-import { SongWithStats, TabRow, ScoreRow } from '../types';
+import { SongWithStats, TabRow, TabWithCount, ScoreRow } from '../types';
 
 export const MOCK_TABS: TabRow[] = [
   { id: 1, name: '十八番', sort_order: 1 },
   { id: 2, name: '練習中', sort_order: 2 },
   { id: 3, name: 'アニソン', sort_order: 3 },
+];
+
+export const MOCK_TABS_WITH_COUNTS: TabWithCount[] = [
+  { id: 1, name: '十八番', sort_order: 1, song_count: 3 },
+  { id: 2, name: '練習中', sort_order: 2, song_count: 1 },
+  { id: 3, name: 'アニソン', sort_order: 3, song_count: 2 },
 ];
 
 export const MOCK_SONGS: SongWithStats[] = [

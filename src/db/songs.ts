@@ -1,6 +1,11 @@
 import { getDb } from './client';
 import { SongRow, SongWithStats, TabRow } from '../types';
 
+export function getAllSongsCount(): number {
+  const result = getDb().getFirstSync<{ count: number }>('SELECT COUNT(*) AS count FROM songs');
+  return result?.count ?? 0;
+}
+
 export function getAllSongs(): SongWithStats[] {
   const songs = getDb().getAllSync<SongRow & { best_score: number | null; latest_score: number | null; score_count: number }>(`
     SELECT
