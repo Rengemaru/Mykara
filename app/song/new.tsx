@@ -75,6 +75,12 @@ export default function SongFormScreen() {
     }
   }, [songId, isEdit]);
 
+  // Bug-1: タブが削除された後に編集フォームを開いたとき、存在しないタブIDを除去する
+  useEffect(() => {
+    if (!isEdit || tabs.length === 0) return;
+    setSelectedTabIds((prev) => prev.filter((id) => tabs.some((t) => t.id === id)));
+  }, [tabs, isEdit]);
+
   function handleSelectSuggestion(item: MusicSuggestion) {
     setTitle(item.trackName);
     setArtist(item.artistName);
