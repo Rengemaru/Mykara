@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Keyboard,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -111,6 +112,7 @@ export default function SongFormScreen() {
       console.error(e);
       Alert.alert('エラー', 'タブの作成に失敗しました');
     }
+    Keyboard.dismiss(); // Bug-3: Android でキーボードが残存する問題を修正
     setNewTabModalVisible(false);
   }
 
