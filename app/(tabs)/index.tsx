@@ -244,7 +244,7 @@ export default function HomeScreen() {
       )}
 
       {/* 月次統計バー */}
-      {monthlyStats && !sessionSummary && (
+      {monthlyStats && (
         <View style={styles.monthlyBar}>
           <Text style={styles.monthlyText}>
             📅 今月 {monthlyStats.record_count}回記録
