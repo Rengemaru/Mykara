@@ -95,6 +95,11 @@ export default function HomeScreen() {
       const ids = getSetlistSongIds(today);
       setSetlistIds(ids);
 
+      // Bug-5: セットリストが空になったのに SETLIST_TAB が選択中の場合は ALL_TAB に戻す
+      if (ids.length === 0 && activeTabId === SETLIST_TAB.id) {
+        setActiveTabId(ALL_TAB.id);
+      }
+
       const summary = getSessionSummary(today);
       setSessionSummary(summary.song_count > 0 ? summary : null);
 
