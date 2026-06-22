@@ -1,10 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Platform } from 'react-native';
 import { SongWithStats } from '../types';
-import { getAllSongs, getSongsByTab } from '../db/songs';
+import { getAllSongs, getSongsByTab, getSongsByIds } from '../db/songs';
+import { getSetlistSongIds } from '../db/settings';
 import { MOCK_SONGS } from '../db/mockData';
 
-export const ALL_TAB = { id: -1, name: 'すべて', sort_order: -1 } as const;
+export const ALL_TAB      = { id: -1, name: 'すべて',  sort_order: -1 } as const;
+export const SETLIST_TAB  = { id: -2, name: '今日',    sort_order: -2 } as const;
+
+function localDateString(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
 
 export function useSongs(tabId: number) {
   const [songs, setSongs] = useState<SongWithStats[]>([]);
@@ -23,7 +30,15 @@ export function useSongs(tabId: number) {
         setLoading(false);
         return;
       }
-      const data = tabId === ALL_TAB.id ? getAllSongs() : getSongsByTab(tabId);
+      let data: SongWithStats[];
+      if (tabId === ALL_TAB.id) {
+        data = getAllSongs();
+      } else if (tabId === SETLIST_TAB.id) {
+        const ids = getSetlistSongIds(localDateString());
+        data = getSongsByIds(ids);
+      } else {
+        data = getSongsByTab(tabId);
+      }
       setSongs(data);
       setError(null);
     } catch (e) {
