@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   Animated,
   Modal,
@@ -36,6 +37,7 @@ export function ScoreBottomSheet({ visible, song, editingScore, onClose, onSaved
   const [machine, setMachine] = useState<Machine>(currentMachine);
   const [pbScore, setPbScore] = useState<number | null>(null);
   const pbAnim = useRef(new Animated.Value(0)).current;
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (visible) {
@@ -96,6 +98,7 @@ export function ScoreBottomSheet({ visible, song, editingScore, onClose, onSaved
   }
 
   async function handleSave() {
+    if (isSaving) return; // Bug-4: 連打による二重送信を防止
     const score = parseFloat(input);
     if (isNaN(score) || score < 0 || score > MAX_SCORE) {
       Alert.alert('入力エラー', '0〜100の数値を入力してください');
@@ -110,6 +113,7 @@ export function ScoreBottomSheet({ visible, song, editingScore, onClose, onSaved
       return;
     }
     try {
+      setIsSaving(true);
       if (editingScore) {
         updateScore(editingScore.id, score, date, machine);
         onSaved();
@@ -126,6 +130,8 @@ export function ScoreBottomSheet({ visible, song, editingScore, onClose, onSaved
     } catch (e) {
       console.error(e);
       Alert.alert('エラー', '保存に失敗しました');
+    } finally {
+      setIsSaving(false);
     }
   }
 
@@ -219,10 +225,11 @@ export function ScoreBottomSheet({ visible, song, editingScore, onClose, onSaved
         </View>
 
         {/* 保存ボタン */}
-        <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
-          <Text style={styles.saveBtnText}>
-            {isEdit ? '変更を保存する' : '記録する'}
-          </Text>
+        <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={isSaving}>
+          {isSaving
+            ? <ActivityIndicator color={colors.white} />
+            : <Text style={styles.saveBtnText}>{isEdit ? '変更を保存する' : '記録する'}</Text>
+          }
         </TouchableOpacity>
 
         {/* 自己ベスト更新バナー */}
