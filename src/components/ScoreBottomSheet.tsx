@@ -93,12 +93,13 @@ export function ScoreBottomSheet({ visible, song, editingScore, onClose, onSaved
       Animated.timing(pbAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
     ]).start(() => {
       setPbScore(null);
+      setIsSaving(false); // Bug-4: PBバナー終了後にリセット（finallyより遅らせる）
       onSaved();
     });
   }
 
   async function handleSave() {
-    if (isSaving) return; // Bug-4: 連打による二重送信を防止
+    if (isSaving) return;
     const score = parseFloat(input);
     if (isNaN(score) || score < 0 || score > MAX_SCORE) {
       Alert.alert('入力エラー', '0〜100の数値を入力してください');
@@ -112,6 +113,7 @@ export function ScoreBottomSheet({ visible, song, editingScore, onClose, onSaved
       onSaved();
       return;
     }
+    let pbTriggered = false;
     try {
       setIsSaving(true);
       if (editingScore) {
@@ -122,6 +124,7 @@ export function ScoreBottomSheet({ visible, song, editingScore, onClose, onSaved
         insertScore(song.id, score, date, machine);
         const isNewPB = song.best_score === null || score > song.best_score;
         if (isNewPB) {
+          pbTriggered = true; // finally での isSaving リセットをスキップ
           showPBBanner(score);
         } else {
           onSaved();
@@ -131,7 +134,7 @@ export function ScoreBottomSheet({ visible, song, editingScore, onClose, onSaved
       console.error(e);
       Alert.alert('エラー', '保存に失敗しました');
     } finally {
-      setIsSaving(false);
+      if (!pbTriggered) setIsSaving(false);
     }
   }
 
