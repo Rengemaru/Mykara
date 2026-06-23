@@ -15,6 +15,7 @@ import {
 import { Swipeable } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EmptyState } from '../../src/components/EmptyState';
+import { FirstLaunchGuide } from '../../src/components/FirstLaunchGuide';
 import { ScoreBottomSheet } from '../../src/components/ScoreBottomSheet';
 import { SetlistModal } from '../../src/components/SetlistModal';
 import { SongCard } from '../../src/components/SongCard';
@@ -22,7 +23,7 @@ import { colors } from '../../src/constants/colors';
 import { fonts } from '../../src/constants/fonts';
 import { deleteSong, getAllSongs } from '../../src/db/songs';
 import { getSessionSummary, getMonthlyStats, SessionSummary, MonthlyStats } from '../../src/db/scores';
-import { getSetlistSongIds, saveSetlistSongIds } from '../../src/db/settings';
+import { getSetlistSongIds, saveSetlistSongIds, getSettingSync, setSettingSync } from '../../src/db/settings';
 import { useSongs, ALL_TAB, SETLIST_TAB } from '../../src/hooks/useSongs';
 import { useTabs } from '../../src/hooks/useTabs';
 import { SongWithStats } from '../../src/types';
@@ -82,6 +83,7 @@ export default function HomeScreen() {
   const [allSongsForSetlist, setAllSongsForSetlist] = useState<SongWithStats[]>([]);
   const [sessionSummary, setSessionSummary] = useState<SessionSummary | null>(null);
   const [monthlyStats, setMonthlyStats] = useState<MonthlyStats | null>(null);
+  const [firstLaunchGuideVisible, setFirstLaunchGuideVisible] = useState(false);
 
   const { songs, loading, error, reload } = useSongs(activeTabId);
 
@@ -118,8 +120,24 @@ export default function HomeScreen() {
       reloadTabs();
       reload();
       reloadExtras();
+      // Onb-1: 初回起動ガイドのフラグを確認
+      if (Platform.OS !== 'web') {
+        const flag = getSettingSync('first_launch_guide');
+        if (flag === 'pending') setFirstLaunchGuideVisible(true);
+      }
     }, [reloadTabs, reload])
   );
+
+  function handleFirstLaunchRegister() {
+    setSettingSync('first_launch_guide', 'done');
+    setFirstLaunchGuideVisible(false);
+    router.push('/song/new');
+  }
+
+  function handleFirstLaunchLater() {
+    setSettingSync('first_launch_guide', 'done');
+    setFirstLaunchGuideVisible(false);
+  }
 
   function openSetlistModal() {
     if (Platform.OS !== 'web') {
@@ -434,6 +452,13 @@ export default function HomeScreen() {
         selectedIds={setlistIds}
         onSave={handleSaveSetlist}
         onClose={() => setSetlistModalVisible(false)}
+      />
+
+      {/* Onb-1: 初回起動ガイド */}
+      <FirstLaunchGuide
+        visible={firstLaunchGuideVisible}
+        onRegister={handleFirstLaunchRegister}
+        onLater={handleFirstLaunchLater}
       />
     </View>
   );
