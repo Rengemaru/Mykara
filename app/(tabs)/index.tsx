@@ -479,6 +479,7 @@ export default function HomeScreen() {
         visible={firstLaunchGuideVisible}
         onRegister={handleFirstLaunchRegister}
         onLater={handleFirstLaunchLater}
+        onRequestClose={handleFirstLaunchLater}
       />
     </View>
   );

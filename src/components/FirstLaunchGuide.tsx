@@ -13,13 +13,14 @@ interface Props {
   visible: boolean;
   onRegister: () => void;
   onLater: () => void;
+  onRequestClose: () => void;
 }
 
-export function FirstLaunchGuide({ visible, onRegister, onLater }: Props) {
+export function FirstLaunchGuide({ visible, onRegister, onLater, onRequestClose }: Props) {
   const insets = useSafeAreaInsets();
 
   return (
-    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent>
+    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onRequestClose}>
       <View style={styles.overlay}>
         <View style={[styles.card, { paddingBottom: insets.bottom + 20 }]}>
           <Text style={styles.emoji}>🎤</Text>
