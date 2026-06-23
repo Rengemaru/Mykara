@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Keyboard,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -75,6 +76,12 @@ export default function SongFormScreen() {
     }
   }, [songId, isEdit]);
 
+  // Bug-1: タブが削除・追加されたとき、存在しないタブIDをselectedTabIdsから除去する
+  useEffect(() => {
+    if (!isEdit) return;
+    setSelectedTabIds((prev) => prev.filter((id) => tabs.some((t) => t.id === id)));
+  }, [tabs, isEdit]);
+
   function handleSelectSuggestion(item: MusicSuggestion) {
     setTitle(item.trackName);
     setArtist(item.artistName);
@@ -105,6 +112,7 @@ export default function SongFormScreen() {
       console.error(e);
       Alert.alert('エラー', 'タブの作成に失敗しました');
     }
+    Keyboard.dismiss(); // Bug-3: Android でキーボードが残存する問題を修正
     setNewTabModalVisible(false);
   }
 

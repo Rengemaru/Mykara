@@ -1,5 +1,5 @@
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   FlatList,
@@ -87,6 +87,9 @@ export default function HomeScreen() {
 
   const swipeRefs = useRef<Map<number, Swipeable | null>>(new Map());
   const [scoringSong, setScoringsSong] = useState<SongWithStats | null>(null);
+  // Bug-5: reloadExtras のクロージャが古い activeTabId を参照しないよう ref で管理
+  const activeTabIdRef = useRef(activeTabId);
+  useEffect(() => { activeTabIdRef.current = activeTabId; }, [activeTabId]);
 
   function reloadExtras() {
     if (Platform.OS === 'web') return;
@@ -94,6 +97,11 @@ export default function HomeScreen() {
       const today = localDateString();
       const ids = getSetlistSongIds(today);
       setSetlistIds(ids);
+
+      // Bug-5: セットリストが空になったのに SETLIST_TAB が選択中の場合は ALL_TAB に戻す
+      if (ids.length === 0 && activeTabIdRef.current === SETLIST_TAB.id) {
+        setActiveTabId(ALL_TAB.id);
+      }
 
       const summary = getSessionSummary(today);
       setSessionSummary(summary.song_count > 0 ? summary : null);
@@ -239,7 +247,7 @@ export default function HomeScreen() {
       )}
 
       {/* 月次統計バー */}
-      {monthlyStats && !sessionSummary && (
+      {monthlyStats && (
         <View style={styles.monthlyBar}>
           <Text style={styles.monthlyText}>
             📅 今月 {monthlyStats.record_count}回記録

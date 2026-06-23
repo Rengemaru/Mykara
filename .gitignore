@@ -43,6 +43,11 @@ google-services-key.json
 /ios
 /android
 
+# アイコンビルド中間ファイル・デザイン検討用素材
+assets/icon-build-*.svg
+assets/icon-build-*.svg.png
+assets/icon-concepts/
+
 # ドキュメント（ローカル管理）
 docs/instructions/
 docs/reports/
