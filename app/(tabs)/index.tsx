@@ -17,12 +17,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CoachMark } from '../../src/components/CoachMark';
 import { EmptyState } from '../../src/components/EmptyState';
 import { FirstLaunchGuide } from '../../src/components/FirstLaunchGuide';
+import { RandomPickModal } from '../../src/components/RandomPickModal';
 import { ScoreBottomSheet } from '../../src/components/ScoreBottomSheet';
 import { SetlistModal } from '../../src/components/SetlistModal';
 import { SongCard } from '../../src/components/SongCard';
 import { colors } from '../../src/constants/colors';
 import { fonts } from '../../src/constants/fonts';
-import { deleteSong, getAllSongs } from '../../src/db/songs';
+import { deleteSong, getAllSongs, getRandomSongId } from '../../src/db/songs';
 import { getSessionSummary, getMonthlyStats, SessionSummary, MonthlyStats } from '../../src/db/scores';
 import { getSetlistSongIds, saveSetlistSongIds, getSettingSync, setSettingSync } from '../../src/db/settings';
 import { useSongs, ALL_TAB, SETLIST_TAB } from '../../src/hooks/useSongs';
@@ -88,6 +89,7 @@ export default function HomeScreen() {
   const [monthlyStats, setMonthlyStats] = useState<MonthlyStats | null>(null);
   const [firstLaunchGuideVisible, setFirstLaunchGuideVisible] = useState(false);
   const [coachMarkVisible, setCoachMarkVisible] = useState(false);
+  const [randomModalVisible, setRandomModalVisible] = useState(false);
 
   const { songs, loading, error, reload } = useSongs(activeTabId);
 
@@ -157,6 +159,16 @@ export default function HomeScreen() {
   function handleCoachMarkDismiss() {
     setSettingSync('coach_mark_shown', 'true');
     setCoachMarkVisible(false);
+  }
+
+  function handleRandomPick(scopeId: number) {
+    // ALL_TAB（すべて）は全曲から、それ以外はそのタブから抽選
+    const tabId = scopeId === ALL_TAB.id ? null : scopeId;
+    const songId = getRandomSongId(tabId);
+    setRandomModalVisible(false);
+    if (songId != null) {
+      router.push(`/song/${songId}`);
+    }
   }
 
   function openSetlistModal() {
@@ -348,6 +360,13 @@ export default function HomeScreen() {
           />
         </View>
         <TouchableOpacity
+          style={styles.diceBtn}
+          onPress={() => setRandomModalVisible(true)}
+          accessibilityLabel="ランダムに選曲"
+        >
+          <Text style={styles.diceBtnText}>🎲</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
           style={[styles.sortBtn, sortKey !== 'created_at' && styles.sortBtnActive]}
           onPress={() => setSortModalVisible(true)}
         >
@@ -483,6 +502,14 @@ export default function HomeScreen() {
         onRegister={handleFirstLaunchRegister}
         onLater={handleFirstLaunchLater}
         onRequestClose={handleFirstLaunchLater}
+      />
+
+      {/* ランダム選曲モーダル */}
+      <RandomPickModal
+        visible={randomModalVisible}
+        scopes={tabsWithAll}
+        onPick={handleRandomPick}
+        onClose={() => setRandomModalVisible(false)}
       />
     </View>
   );
@@ -656,6 +683,17 @@ const styles = StyleSheet.create({
   },
   searchIcon: { fontSize: 12 },
   searchInput: { flex: 1, fontSize: 12, color: colors.text },
+  diceBtn: {
+    width: 36,
+    height: 36,
+    backgroundColor: colors.surface,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  diceBtnText: { fontSize: 16 },
   sortBtn: {
     width: 36,
     height: 36,
