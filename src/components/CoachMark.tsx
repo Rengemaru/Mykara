@@ -13,7 +13,7 @@ interface Props {
 }
 
 export function CoachMark({ visible, onDismiss }: Props) {
-  if (!visible) return null;
+  if (!visible) return <View style={{ height: 0 }} />;
 
   return (
     <View style={styles.container}>
