@@ -24,6 +24,21 @@ export function getAllSongsCount(): number {
   return result?.count ?? 0;
 }
 
+/** ランダムに1曲のIDを返す。tabId が null のときは全曲から、指定時はそのタブから選ぶ。該当曲がなければ null */
+export function getRandomSongId(tabId: number | null): number | null {
+  if (tabId === null) {
+    const row = getDb().getFirstSync<{ id: number }>(
+      'SELECT id FROM songs ORDER BY RANDOM() LIMIT 1'
+    );
+    return row?.id ?? null;
+  }
+  const row = getDb().getFirstSync<{ id: number }>(
+    'SELECT s.id FROM songs s JOIN song_tabs st ON st.song_id = s.id WHERE st.tab_id = ? ORDER BY RANDOM() LIMIT 1',
+    [tabId]
+  );
+  return row?.id ?? null;
+}
+
 export function getAllSongs(): SongWithStats[] {
   const songs = getDb().getAllSync<SongRow & { best_score: number | null; latest_score: number | null; first_score: number | null; latest_scored_at: string | null; score_count: number }>(`
     SELECT s.*, ${STATS_SUBQUERIES}
