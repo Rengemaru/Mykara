@@ -132,7 +132,7 @@ export default function TabsScreen() {
                 <View style={styles.tabIcon}>
                   <Text style={styles.tabIconText}>🗂</Text>
                 </View>
-                <Text style={styles.tabName} numberOfLines={1}>{tab.name}</Text>
+                <Text style={styles.tabName} numberOfLines={1} ellipsizeMode="tail">{tab.name}</Text>
                 <View style={styles.actions}>
                   <TouchableOpacity
                     style={[styles.arrowBtn, index === 0 && styles.arrowBtnDisabled]}
