@@ -87,6 +87,9 @@ export default function HomeScreen() {
 
   const swipeRefs = useRef<Map<number, Swipeable | null>>(new Map());
   const [scoringSong, setScoringsSong] = useState<SongWithStats | null>(null);
+  // Bug-5: reloadExtras のクロージャが古い activeTabId を参照しないよう ref で管理
+  const activeTabIdRef = useRef(activeTabId);
+  useEffect(() => { activeTabIdRef.current = activeTabId; }, [activeTabId]);
 
   function reloadExtras() {
     if (Platform.OS === 'web') return;
@@ -96,7 +99,7 @@ export default function HomeScreen() {
       setSetlistIds(ids);
 
       // Bug-5: セットリストが空になったのに SETLIST_TAB が選択中の場合は ALL_TAB に戻す
-      if (ids.length === 0 && activeTabId === SETLIST_TAB.id) {
+      if (ids.length === 0 && activeTabIdRef.current === SETLIST_TAB.id) {
         setActiveTabId(ALL_TAB.id);
       }
 
