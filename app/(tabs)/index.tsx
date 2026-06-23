@@ -124,12 +124,13 @@ export default function HomeScreen() {
       reloadTabs();
       reload();
       reloadExtras();
-      // Onb-1: 初回起動ガイドのフラグを確認
+      // Onb-1/2: 初回ガイドとコーチマークは排他制御（同時表示しない）
       if (Platform.OS !== 'web') {
         const flag = getSettingSync('first_launch_guide');
-        if (flag === 'pending') setFirstLaunchGuideVisible(true);
-        // Onb-2: コーチマークを初回ホーム訪問時のみ表示（ガイドが出ない場合）
-        if (flag !== 'pending') {
+        if (flag === 'pending') {
+          setFirstLaunchGuideVisible(true);
+        } else {
+          // Onb-2: ガイドが出ないときのみコーチマークを確認
           const coachShown = getSettingSync('coach_mark_shown');
           if (coachShown !== 'true') setCoachMarkVisible(true);
         }
@@ -139,6 +140,8 @@ export default function HomeScreen() {
 
   function handleFirstLaunchRegister() {
     setSettingSync('first_launch_guide', 'done');
+    // 「今すぐ登録」を選んだユーザーはコーチマーク不要（ガイドで十分）
+    setSettingSync('coach_mark_shown', 'true');
     setFirstLaunchGuideVisible(false);
     router.push('/song/new');
   }
@@ -146,7 +149,7 @@ export default function HomeScreen() {
   function handleFirstLaunchLater() {
     setSettingSync('first_launch_guide', 'done');
     setFirstLaunchGuideVisible(false);
-    // ガイドを「あとで」で閉じた直後にコーチマークを表示
+    // 「あとで」の場合のみコーチマークを表示
     const coachShown = getSettingSync('coach_mark_shown');
     if (coachShown !== 'true') setCoachMarkVisible(true);
   }
