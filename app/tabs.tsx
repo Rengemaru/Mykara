@@ -104,8 +104,8 @@ export default function TabsScreen() {
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       {/* ヘッダー */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.backBtn}>‹</Text>
+        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+          <Text style={styles.backBtnText}>‹</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>タブを編集</Text>
       </View>
@@ -229,9 +229,20 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   backBtn: {
+    width: 36,
+    height: 36,
+    backgroundColor: colors.surface2,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  backBtnText: {
     fontSize: 22,
     color: colors.accent,
     fontWeight: '600',
+    lineHeight: 26,
   },
   headerTitle: {
     fontSize: 16,
