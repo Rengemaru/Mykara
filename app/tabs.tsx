@@ -19,6 +19,8 @@ import { useTabs } from '../src/hooks/useTabs';
 import { EmptyState } from '../src/components/EmptyState';
 import { TabRow } from '../src/types';
 
+const MAX_TAB_NAME_LENGTH = 20;
+
 export default function TabsScreen() {
   const insets = useSafeAreaInsets();
   const { tabs, reload } = useTabs();
@@ -46,6 +48,10 @@ export default function TabsScreen() {
 
   function handleConfirm() {
     if (!inputName.trim()) return;
+    if (inputName.trim().length > MAX_TAB_NAME_LENGTH) {
+      Alert.alert('入力エラー', `タブ名は${MAX_TAB_NAME_LENGTH}文字以内で入力してください`);
+      return;
+    }
     if (Platform.OS === 'web') { closeModal(); return; }
     try {
       if (modalMode === 'add') {
@@ -179,15 +185,25 @@ export default function TabsScreen() {
             {modalMode === 'add' ? '新しいタブを作成' : 'タブ名を変更'}
           </Text>
           <TextInput
-            style={styles.modalInput}
+            style={[
+              styles.modalInput,
+              inputName.length > MAX_TAB_NAME_LENGTH && styles.modalInputError,
+            ]}
             value={inputName}
             onChangeText={setInputName}
             placeholder="タブ名を入力"
             placeholderTextColor={colors.text3}
             autoFocus
             returnKeyType="done"
+            maxLength={MAX_TAB_NAME_LENGTH}
             onSubmitEditing={handleConfirm}
           />
+          <Text style={[
+            styles.charCount,
+            inputName.length >= MAX_TAB_NAME_LENGTH * 0.9 && styles.charCountWarn,
+          ]}>
+            {inputName.length}/{MAX_TAB_NAME_LENGTH}
+          </Text>
           <View style={styles.modalActions}>
             <TouchableOpacity style={styles.modalCancel} onPress={closeModal}>
               <Text style={styles.modalCancelText}>キャンセル</Text>
@@ -370,6 +386,18 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     fontSize: 13,
     color: colors.text,
+  },
+  modalInputError: {
+    borderColor: colors.red,
+  },
+  charCount: {
+    fontSize: 10,
+    color: colors.text3,
+    textAlign: 'right',
+    marginTop: -8,
+  },
+  charCountWarn: {
+    color: colors.red,
   },
   modalActions: {
     flexDirection: 'row',
