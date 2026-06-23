@@ -241,6 +241,8 @@ export default function HomeScreen() {
   }, [tabsWithAll, setlistIds]);
 
   const currentSortLabel = SORT_OPTIONS.find((o) => o.key === sortKey)?.label ?? '';
+  // 登録曲が1件もないときはランダム選曲ボタンを出さない
+  const hasAnySong = (tabsWithAll.find((t) => t.id === ALL_TAB.id)?.song_count ?? 0) > 0;
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
@@ -360,13 +362,15 @@ export default function HomeScreen() {
             onChangeText={setQuery}
           />
         </View>
-        <TouchableOpacity
-          style={styles.diceBtn}
-          onPress={() => setRandomModalVisible(true)}
-          accessibilityLabel="ランダムに選曲"
-        >
-          <Text style={styles.diceBtnText}>🎲</Text>
-        </TouchableOpacity>
+        {hasAnySong && (
+          <TouchableOpacity
+            style={styles.diceBtn}
+            onPress={() => setRandomModalVisible(true)}
+            accessibilityLabel="ランダムに選曲"
+          >
+            <Text style={styles.diceBtnText}>🎲</Text>
+          </TouchableOpacity>
+        )}
         <TouchableOpacity
           style={[styles.sortBtn, sortKey !== 'created_at' && styles.sortBtnActive]}
           onPress={() => setSortModalVisible(true)}
