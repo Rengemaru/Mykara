@@ -31,10 +31,7 @@ import { SongWithStats } from '../../src/types';
 
 type SortKey = 'created_at' | 'best_score' | 'score_count' | 'latest_scored_at' | 'improvement';
 
-const MAX_TAB_DISPLAY_LENGTH = 7;
-function truncateTabName(name: string): string {
-  return name.length > MAX_TAB_DISPLAY_LENGTH ? name.slice(0, MAX_TAB_DISPLAY_LENGTH) + '…' : name;
-}
+import { truncateTabName } from '../../src/constants/tabConfig';
 
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: 'created_at',      label: '登録日（新しい順）' },

@@ -14,12 +14,11 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../src/constants/colors';
+import { MAX_TAB_NAME_LENGTH } from '../src/constants/tabConfig';
 import { insertTab, updateTab, deleteTab, updateTabOrder } from '../src/db/tabs';
 import { useTabs } from '../src/hooks/useTabs';
 import { EmptyState } from '../src/components/EmptyState';
 import { TabRow } from '../src/types';
-
-const MAX_TAB_NAME_LENGTH = 30;
 
 export default function TabsScreen() {
   const insets = useSafeAreaInsets();
