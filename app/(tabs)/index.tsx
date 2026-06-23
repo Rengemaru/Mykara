@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { CoachMark } from '../../src/components/CoachMark';
 import { EmptyState } from '../../src/components/EmptyState';
 import { FirstLaunchGuide } from '../../src/components/FirstLaunchGuide';
 import { ScoreBottomSheet } from '../../src/components/ScoreBottomSheet';
@@ -84,6 +85,7 @@ export default function HomeScreen() {
   const [sessionSummary, setSessionSummary] = useState<SessionSummary | null>(null);
   const [monthlyStats, setMonthlyStats] = useState<MonthlyStats | null>(null);
   const [firstLaunchGuideVisible, setFirstLaunchGuideVisible] = useState(false);
+  const [coachMarkVisible, setCoachMarkVisible] = useState(false);
 
   const { songs, loading, error, reload } = useSongs(activeTabId);
 
@@ -124,6 +126,11 @@ export default function HomeScreen() {
       if (Platform.OS !== 'web') {
         const flag = getSettingSync('first_launch_guide');
         if (flag === 'pending') setFirstLaunchGuideVisible(true);
+        // Onb-2: コーチマークを初回ホーム訪問時のみ表示（ガイドが出ない場合）
+        if (flag !== 'pending') {
+          const coachShown = getSettingSync('coach_mark_shown');
+          if (coachShown !== 'true') setCoachMarkVisible(true);
+        }
       }
     }, [reloadTabs, reload])
   );
@@ -137,6 +144,14 @@ export default function HomeScreen() {
   function handleFirstLaunchLater() {
     setSettingSync('first_launch_guide', 'done');
     setFirstLaunchGuideVisible(false);
+    // ガイドを「あとで」で閉じた直後にコーチマークを表示
+    const coachShown = getSettingSync('coach_mark_shown');
+    if (coachShown !== 'true') setCoachMarkVisible(true);
+  }
+
+  function handleCoachMarkDismiss() {
+    setSettingSync('coach_mark_shown', 'true');
+    setCoachMarkVisible(false);
   }
 
   function openSetlistModal() {
@@ -263,6 +278,9 @@ export default function HomeScreen() {
           )}
         </View>
       )}
+
+      {/* Onb-2: コアループのコーチマーク（初回のみ） */}
+      <CoachMark visible={coachMarkVisible} onDismiss={handleCoachMarkDismiss} />
 
       {/* 月次統計バー */}
       {monthlyStats && (
