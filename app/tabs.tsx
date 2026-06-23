@@ -19,7 +19,7 @@ import { useTabs } from '../src/hooks/useTabs';
 import { EmptyState } from '../src/components/EmptyState';
 import { TabRow } from '../src/types';
 
-const MAX_TAB_NAME_LENGTH = 20;
+const MAX_TAB_NAME_LENGTH = 30;
 
 export default function TabsScreen() {
   const insets = useSafeAreaInsets();

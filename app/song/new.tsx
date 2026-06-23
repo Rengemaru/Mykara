@@ -27,7 +27,7 @@ import { useMusicSearch } from '../../src/hooks/useMusicSearch';
 import { MOCK_SONGS } from '../../src/db/mockData';
 import { MusicSuggestion } from '../../src/types';
 
-const MAX_TAB_NAME_LENGTH = 20;
+const MAX_TAB_NAME_LENGTH = 30;
 
 export default function SongFormScreen() {
   const insets = useSafeAreaInsets();
