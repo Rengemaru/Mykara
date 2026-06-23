@@ -31,6 +31,11 @@ import { SongWithStats } from '../../src/types';
 
 type SortKey = 'created_at' | 'best_score' | 'score_count' | 'latest_scored_at' | 'improvement';
 
+const MAX_TAB_DISPLAY_LENGTH = 7;
+function truncateTabName(name: string): string {
+  return name.length > MAX_TAB_DISPLAY_LENGTH ? name.slice(0, MAX_TAB_DISPLAY_LENGTH) + '…' : name;
+}
+
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: 'created_at',      label: '登録日（新しい順）' },
   { key: 'best_score',      label: '最高スコア順' },
@@ -318,7 +323,7 @@ export default function HomeScreen() {
                 isActive && styles.tabPillTextActive,
                 isSetlist && styles.tabPillTextSetlist,
               ]}>
-                {isSetlist ? '📋 ' : ''}{tab.name}
+                {isSetlist ? '📋 ' : ''}{truncateTabName(tab.name)}
               </Text>
               <View style={[styles.tabBadge, isActive && styles.tabBadgeActive, isSetlist && styles.tabBadgeSetlist]}>
                 <Text style={[styles.tabBadgeText, isActive && styles.tabBadgeTextActive]}>
