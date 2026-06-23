@@ -47,10 +47,6 @@ export default function TabsScreen() {
 
   function handleConfirm() {
     if (!inputName.trim()) return;
-    if (inputName.trim().length > MAX_TAB_NAME_LENGTH) {
-      Alert.alert('入力エラー', `タブ名は${MAX_TAB_NAME_LENGTH}文字以内で入力してください`);
-      return;
-    }
     if (Platform.OS === 'web') { closeModal(); return; }
     try {
       if (modalMode === 'add') {

@@ -105,10 +105,6 @@ export default function SongFormScreen() {
 
   function handleConfirmNewTab() {
     if (!newTabName.trim()) return;
-    if (newTabName.trim().length > MAX_TAB_NAME_LENGTH) {
-      Alert.alert('入力エラー', `タブ名は${MAX_TAB_NAME_LENGTH}文字以内で入力してください`);
-      return;
-    }
     if (Platform.OS === 'web') { setNewTabModalVisible(false); return; }
     try {
       const newId = insertTab(newTabName.trim());
