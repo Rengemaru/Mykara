@@ -162,10 +162,11 @@ export default function HomeScreen() {
   }
 
   function handleRandomPick(scopeId: number) {
+    setRandomModalVisible(false);
+    if (Platform.OS === 'web') return;
     // ALL_TAB（すべて）は全曲から、それ以外はそのタブから抽選
     const tabId = scopeId === ALL_TAB.id ? null : scopeId;
     const songId = getRandomSongId(tabId);
-    setRandomModalVisible(false);
     if (songId != null) {
       router.push(`/song/${songId}`);
     }
