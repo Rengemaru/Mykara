@@ -21,6 +21,13 @@ import type { Machine } from '../lib/machine';
 
 const MAX_SCORE = 100;
 
+/** 「2026-06-24T21:30」→「2026/06/24 21:30」。日付のみの旧データは日付だけ返す */
+function formatDateTime(s: string): string {
+  const [datePart, timePart] = s.split('T');
+  const d = datePart.replace(/-/g, '/');
+  return timePart ? `${d} ${timePart}` : d;
+}
+
 interface Props {
   visible: boolean;
   song: SongWithStats;
@@ -33,7 +40,6 @@ export function ScoreBottomSheet({ visible, song, editingScore, onClose, onSaved
   const insets = useSafeAreaInsets();
   const { currentMachine, setCurrentMachine } = useMachine();
   const [input, setInput] = useState('');
-  const [date, setDate] = useState('');
   const [machine, setMachine] = useState<Machine>(currentMachine);
   const [pbScore, setPbScore] = useState<number | null>(null);
   const pbAnim = useRef(new Animated.Value(0)).current;
@@ -43,29 +49,19 @@ export function ScoreBottomSheet({ visible, song, editingScore, onClose, onSaved
     if (visible) {
       if (editingScore) {
         setInput(String(editingScore.score));
-        setDate(editingScore.scored_at);
         setMachine((editingScore.machine as Machine) || currentMachine);
       } else {
         setInput('');
-        setDate(todayString());
         setMachine(currentMachine);
       }
     }
   }, [visible, editingScore, currentMachine]);
 
-  function todayString() {
+  // 記録した瞬間の現在日時を「YYYY-MM-DDTHH:MM」（ローカル時刻・分単位）で返す
+  function nowDateTimeString() {
     const d = new Date();
-    return d.toISOString().split('T')[0];
-  }
-
-  function shiftDate(n: number) {
-    setDate((prev) => {
-      const next = new Date(prev + 'T00:00:00');
-      next.setDate(next.getDate() + n);
-      const today = new Date(todayString() + 'T00:00:00');
-      if (next > today) return prev;
-      return next.toISOString().split('T')[0];
-    });
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
   }
 
   function handleKey(key: string) {
@@ -105,10 +101,6 @@ export function ScoreBottomSheet({ visible, song, editingScore, onClose, onSaved
       Alert.alert('入力エラー', '0〜100の数値を入力してください');
       return;
     }
-    if (!date) {
-      Alert.alert('入力エラー', '日付を入力してください');
-      return;
-    }
     if (Platform.OS === 'web') {
       onSaved();
       return;
@@ -117,11 +109,11 @@ export function ScoreBottomSheet({ visible, song, editingScore, onClose, onSaved
     try {
       setIsSaving(true);
       if (editingScore) {
-        updateScore(editingScore.id, score, date, machine);
+        updateScore(editingScore.id, score, machine);
         onSaved();
       } else {
         await setCurrentMachine(machine);
-        insertScore(song.id, score, date, machine);
+        insertScore(song.id, score, nowDateTimeString(), machine);
         const isNewPB = song.best_score === null || score > song.best_score;
         if (isNewPB) {
           pbTriggered = true; // finally での isSaving リセットをスキップ
@@ -155,7 +147,7 @@ export function ScoreBottomSheet({ visible, song, editingScore, onClose, onSaved
         </Text>
         <Text style={styles.subtitle}>
           {song.title} ／ {song.artist || '—'}
-          {isEdit ? ` ／ ${editingScore.scored_at}` : ''}
+          {isEdit ? ` ／ ${formatDateTime(editingScore.scored_at)}` : ''}
         </Text>
 
         {/* スコア表示 */}
@@ -209,23 +201,12 @@ export function ScoreBottomSheet({ visible, song, editingScore, onClose, onSaved
           ))}
         </View>
 
-        {/* 日付 */}
-        <View style={styles.dateRow}>
-          <Text>📅</Text>
-          <TouchableOpacity style={styles.dateNavBtn} onPress={() => shiftDate(-1)}>
-            <Text style={styles.dateNavText}>‹</Text>
-          </TouchableOpacity>
-          <View style={styles.dateVal}>
-            <Text style={styles.dateText}>{date}</Text>
-          </View>
-          <TouchableOpacity
-            style={[styles.dateNavBtn, date === todayString() && styles.dateNavBtnDisabled]}
-            onPress={() => shiftDate(1)}
-            disabled={date === todayString()}
-          >
-            <Text style={[styles.dateNavText, date === todayString() && styles.dateNavTextDisabled]}>›</Text>
-          </TouchableOpacity>
-        </View>
+        {/* 記録日時の案内 */}
+        <Text style={styles.datetimeHint}>
+          {isEdit
+            ? `📅 ${formatDateTime(editingScore.scored_at)} の記録`
+            : '📅 記録した日時が自動で保存されます'}
+        </Text>
 
         {/* 保存ボタン */}
         <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={isSaving}>
@@ -402,44 +383,11 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.text2,
   },
-  dateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 11,
-  },
-  dateVal: {
-    backgroundColor: colors.surface,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  dateText: {
+  datetimeHint: {
     fontSize: 11,
-    color: colors.text,
-  },
-  dateNavBtn: {
-    width: 28,
-    height: 28,
-    backgroundColor: colors.surface2,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dateNavBtnDisabled: {
-    opacity: 0.3,
-  },
-  dateNavText: {
-    fontSize: 16,
-    color: colors.text2,
-    lineHeight: 20,
-  },
-  dateNavTextDisabled: {
     color: colors.text3,
+    marginBottom: 11,
+    paddingLeft: 2,
   },
   saveBtn: {
     backgroundColor: colors.accent,
