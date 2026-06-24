@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../src/constants/colors';
 import { fonts } from '../../src/constants/fonts';
 import { deleteScore, getKeyScoreStats, KeyScoreStat } from '../../src/db/scores';
+import { formatDateTime } from '../../src/lib/datetime';
 import { useSongDetail } from '../../src/hooks/useSongDetail';
 import { ScoreRow } from '../../src/types';
 import { ScoreBottomSheet } from '../../src/components/ScoreBottomSheet';
@@ -46,7 +47,7 @@ export default function SongDetailScreen() {
   function handleDeleteScore(score: ScoreRow) {
     Alert.alert(
       'スコアを削除',
-      `${score.scored_at}  ${score.score.toFixed(1)}点\nこの記録を削除しますか？`,
+      `${formatDateTime(score.scored_at)}  ${score.score.toFixed(1)}点\nこの記録を削除しますか？`,
       [
         { text: 'キャンセル', style: 'cancel' },
         {
@@ -309,7 +310,7 @@ function HistoryRow({ score, onEdit, onDelete }: HistoryRowProps) {
       )}
     >
       <View style={styles.historyRow}>
-        <Text style={styles.historyDate}>{score.scored_at}</Text>
+        <Text style={styles.historyDate}>{formatDateTime(score.scored_at)}</Text>
         <View style={[
           styles.machineBadge,
           score.machine === 'DAM' ? styles.machineBadgeDam : styles.machineBadgeJoy,

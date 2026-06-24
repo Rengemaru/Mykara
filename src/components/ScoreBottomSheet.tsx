@@ -18,15 +18,9 @@ import { insertScore, updateScore } from '../db/scores';
 import { ScoreRow, SongWithStats } from '../types';
 import { useMachine } from '../contexts/MachineContext';
 import type { Machine } from '../lib/machine';
+import { formatDateTime } from '../lib/datetime';
 
 const MAX_SCORE = 100;
-
-/** 「2026-06-24T21:30」→「2026/06/24 21:30」。日付のみの旧データは日付だけ返す */
-function formatDateTime(s: string): string {
-  const [datePart, timePart] = s.split('T');
-  const d = datePart.replace(/-/g, '/');
-  return timePart ? `${d} ${timePart}` : d;
-}
 
 interface Props {
   visible: boolean;
