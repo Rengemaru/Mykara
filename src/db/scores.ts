@@ -53,15 +53,17 @@ export interface SessionSummary {
 }
 
 export function getSessionSummary(date: string): SessionSummary {
+  // scored_at は「YYYY-MM-DDTHH:MM」形式。日付のみの旧データ「YYYY-MM-DD」も前方一致で拾える
+  const datePrefix = date + '%';
   const countRow = getDb().getFirstSync<{ song_count: number }>(
-    'SELECT COUNT(DISTINCT song_id) AS song_count FROM scores WHERE scored_at = ?',
-    [date]
+    'SELECT COUNT(DISTINCT song_id) AS song_count FROM scores WHERE scored_at LIKE ?',
+    [datePrefix]
   );
   const pbRow = getDb().getFirstSync<{ pb_count: number }>(`
     SELECT COUNT(*) AS pb_count
     FROM (
       SELECT song_id, MAX(score) AS today_best
-      FROM scores WHERE scored_at = ?
+      FROM scores WHERE scored_at LIKE ?
       GROUP BY song_id
     ) today
     JOIN (
@@ -69,7 +71,7 @@ export function getSessionSummary(date: string): SessionSummary {
       FROM scores GROUP BY song_id
     ) all_time ON today.song_id = all_time.song_id
     WHERE today.today_best >= all_time.all_time_best
-  `, [date]);
+  `, [datePrefix]);
   return {
     song_count: countRow?.song_count ?? 0,
     pb_count: pbRow?.pb_count ?? 0,
@@ -77,8 +79,9 @@ export function getSessionSummary(date: string): SessionSummary {
 }
 
 export function getScoresBySong(songId: number): ScoreRow[] {
+  // 同じ分に複数記録があっても登録順で安定させるため id を第2キーにする
   return getDb().getAllSync<ScoreRow>(
-    'SELECT * FROM scores WHERE song_id = ? ORDER BY scored_at DESC',
+    'SELECT * FROM scores WHERE song_id = ? ORDER BY scored_at DESC, id DESC',
     [songId]
   );
 }
@@ -91,10 +94,11 @@ export function insertScore(songId: number, score: number, scoredAt: string, mac
   return result.lastInsertRowId;
 }
 
-export function updateScore(id: number, score: number, scoredAt: string, machine: string): void {
+// 日時はあとから編集しない方針のため、scored_at は更新対象から外す（点数・機種のみ）
+export function updateScore(id: number, score: number, machine: string): void {
   getDb().runSync(
-    'UPDATE scores SET score = ?, scored_at = ?, machine = ? WHERE id = ?',
-    [score, scoredAt, machine, id]
+    'UPDATE scores SET score = ?, machine = ? WHERE id = ?',
+    [score, machine, id]
   );
 }
 
