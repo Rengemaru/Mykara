@@ -407,7 +407,8 @@ export default function HomeScreen() {
         <FlatList
           data={filtered}
           keyExtractor={(item) => String(item.id)}
-          contentContainerStyle={styles.list}
+          style={styles.list}
+          contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => (
             <Swipeable
@@ -625,12 +626,14 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   monthlyText: { fontSize: 11, color: colors.text2 },
-  tabScroll: { flexGrow: 0 },
+  // flexShrink:0 が必須。これが無いと、曲が増えて FlatList が縦に伸びたとき
+  // flex shrink でタブ行が圧縮され、pill の下端から切れていく（曲数に比例して悪化）。
+  // flexGrow:0 で縦に伸びず、固定 height は与えない（固定すると hard clip 枠になる）。
+  tabScroll: { flexGrow: 0, flexShrink: 0, marginBottom: 10 },
   tabScrollContent: {
     paddingHorizontal: 18,
-    paddingBottom: 10,
+    paddingVertical: 4,
     gap: 6,
-    alignItems: 'center',
   },
   tabPill: {
     flexDirection: 'row',
@@ -655,7 +658,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 185, 107, 0.15)',
     borderColor: 'rgba(0, 185, 107, 0.4)',
   },
-  tabPillText: { fontSize: 11, fontWeight: '500', color: colors.text2 },
+  tabPillText: { fontSize: 11, fontWeight: '500', color: colors.text2, lineHeight: 16, includeFontPadding: false },
   tabPillTextActive: { color: colors.accent },
   tabPillTextSetlist: { color: colors.green },
   tabBadge: {
@@ -722,7 +725,10 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     fontWeight: '500',
   },
-  list: { paddingHorizontal: 18, paddingBottom: 100, gap: 7 },
+  // flex:1 で残り領域いっぱいに広がり内部スクロールする。これが無いと
+  // FlatList が中身の高さで膨らみ、兄弟（タブ行）を flex shrink で圧迫して切る。
+  list: { flex: 1 },
+  listContent: { paddingHorizontal: 18, paddingBottom: 100, gap: 7 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
   swipeActions: { flexDirection: 'row', alignItems: 'stretch', paddingLeft: 8, gap: 6 },
   swipeBtn: {
