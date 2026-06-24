@@ -30,23 +30,6 @@ export function getMonthlyStats(yearMonth: string): MonthlyStats {
   };
 }
 
-export interface KeyScoreStat {
-  key_offset: number;
-  avg_score: number;
-  count: number;
-}
-
-export function getKeyScoreStats(): KeyScoreStat[] {
-  return getDb().getAllSync<KeyScoreStat>(`
-    SELECT s.key_offset, ROUND(AVG(sc.score), 1) AS avg_score, COUNT(sc.id) AS count
-    FROM songs s
-    JOIN scores sc ON sc.song_id = s.id
-    WHERE s.key_offset IS NOT NULL
-    GROUP BY s.key_offset
-    ORDER BY s.key_offset ASC
-  `);
-}
-
 export interface SessionSummary {
   song_count: number;
   pb_count: number;
