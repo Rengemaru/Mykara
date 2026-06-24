@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   FlatList,
   Image,
@@ -27,10 +27,14 @@ export function SetlistModal({ visible, songs, selectedIds, onSave, onClose }: P
   const [checked, setChecked] = useState<Set<number>>(new Set(selectedIds));
   const [query, setQuery] = useState('');
 
-  function handleOpen() {
-    setChecked(new Set(selectedIds));
-    setQuery('');
-  }
+  // モーダルが開くたびに選択状態を最新の selectedIds に同期する。
+  // onShow はスライドイン完了後に発火するため前回の選択が一瞬残る問題があり、visible 変化で同期する。
+  useEffect(() => {
+    if (visible) {
+      setChecked(new Set(selectedIds));
+      setQuery('');
+    }
+  }, [visible, selectedIds]);
 
   function toggle(id: number) {
     setChecked((prev) => {
@@ -54,7 +58,6 @@ export function SetlistModal({ visible, songs, selectedIds, onSave, onClose }: P
       visible={visible}
       animationType="slide"
       presentationStyle="pageSheet"
-      onShow={handleOpen}
       onRequestClose={onClose}
     >
       <View style={[styles.container, { paddingTop: insets.top }]}>
