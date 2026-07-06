@@ -27,6 +27,8 @@ import { useMusicSearch } from '../../src/hooks/useMusicSearch';
 import { MOCK_SONGS } from '../../src/db/mockData';
 import { MusicSuggestion } from '../../src/types';
 
+import { MAX_TAB_NAME_LENGTH, truncateTabName } from '../../src/constants/tabConfig';
+
 export default function SongFormScreen() {
   const insets = useSafeAreaInsets();
   const { songId } = useLocalSearchParams<{ songId?: string }>();
@@ -289,7 +291,7 @@ export default function SongFormScreen() {
                     styles.tabOptionText,
                     selectedTabIds.includes(tab.id) && styles.tabOptionTextSelected,
                   ]}>
-                    {tab.name}
+                    {truncateTabName(tab.name)}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -330,15 +332,25 @@ export default function SongFormScreen() {
             <View style={styles.modalBox}>
             <Text style={styles.modalTitle}>新しいタブを作成</Text>
             <TextInput
-              style={styles.modalInput}
+              style={[
+                styles.modalInput,
+                newTabName.length >= MAX_TAB_NAME_LENGTH && styles.modalInputError,
+              ]}
               value={newTabName}
               onChangeText={setNewTabName}
               placeholder="タブ名を入力"
               placeholderTextColor={colors.text3}
               autoFocus
               returnKeyType="done"
+              maxLength={MAX_TAB_NAME_LENGTH}
               onSubmitEditing={handleConfirmNewTab}
             />
+            <Text style={[
+              styles.charCount,
+              newTabName.length >= MAX_TAB_NAME_LENGTH * 0.9 && styles.charCountWarn,
+            ]}>
+              {newTabName.length}/{MAX_TAB_NAME_LENGTH}
+            </Text>
             <View style={styles.modalActions}>
               <TouchableOpacity style={styles.modalCancel} onPress={() => setNewTabModalVisible(false)}>
                 <Text style={styles.modalCancelText}>キャンセル</Text>
@@ -598,6 +610,18 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     fontSize: 13,
     color: colors.text,
+  },
+  modalInputError: {
+    borderColor: colors.red,
+  },
+  charCount: {
+    fontSize: 10,
+    color: colors.text3,
+    textAlign: 'right',
+    marginTop: -8,
+  },
+  charCountWarn: {
+    color: colors.red,
   },
   modalActions: {
     flexDirection: 'row',

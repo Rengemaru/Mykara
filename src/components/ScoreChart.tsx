@@ -1,6 +1,7 @@
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';
 import { colors } from '../constants/colors';
+import { datePartOf } from '../lib/datetime';
 import { ScoreRow } from '../types';
 
 interface Props {
@@ -13,6 +14,24 @@ type ChartPoint = {
   dataPointColor?: string;
   dataPointRadius?: number;
 };
+
+/**
+ * 軸ラベルを決める。日付が変わった点（とその日の最初）と時刻を持たない旧データは
+ * 「M/D」を表示し、同じ日の2点目以降は「HH:MM」を表示する。
+ * これで同じ日に複数回歌った記録も時刻で区別できる。
+ */
+function buildLabel(scoreRows: ScoreRow[], i: number): string {
+  const cur = scoreRows[i].scored_at;
+  const curDate = datePartOf(cur);
+  const time = cur.split('T')[1];
+  const prevDate = i > 0 ? datePartOf(scoreRows[i - 1].scored_at) : null;
+
+  if (curDate !== prevDate || !time) {
+    const [, m, d] = curDate.split('-');
+    return `${Number(m)}/${Number(d)}`;
+  }
+  return time;
+}
 
 function buildChartData(
   scoreRows: ScoreRow[],
@@ -30,10 +49,7 @@ function buildChartData(
     let dataPointColor = baseColor;
     let dataPointRadius = 4;
 
-    if (isMax && isLatest) {
-      dataPointColor = colors.accent;
-      dataPointRadius = 6;
-    } else if (isMax) {
+    if (isMax) {
       dataPointColor = colors.accent;
       dataPointRadius = 6;
     } else if (isLatest) {
@@ -43,7 +59,7 @@ function buildChartData(
 
     return {
       value: s.score,
-      label: s.scored_at.slice(5).replace('-', '/'),
+      label: buildLabel(scoreRows, i),
       dataPointColor,
       dataPointRadius,
     };
@@ -73,6 +89,12 @@ export function ScoreChart({ scores }: Props) {
 
   const chartWidth = screenWidth - 36 - 60;
 
+  // 点が少ないときは横幅いっぱいに広げ、多いときは一定間隔にして横スクロールさせる
+  const pointCount = Math.max(primaryData.length, secondaryData?.length ?? 0);
+  const innerWidth = chartWidth - 40; // initialSpacing + endSpacing 分を差し引く
+  const autoSpacing = pointCount > 1 ? innerWidth / (pointCount - 1) : innerWidth;
+  const spacing = Math.max(44, autoSpacing);
+
   return (
     <View style={styles.container}>
       <LineChart
@@ -97,6 +119,7 @@ export function ScoreChart({ scores }: Props) {
         xAxisColor={colors.border}
         yAxisColor="transparent"
         xAxisLabelTextStyle={styles.xLabel}
+        spacing={spacing}
         initialSpacing={20}
         endSpacing={20}
       />

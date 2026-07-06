@@ -14,20 +14,25 @@ import {
 } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { CoachMark } from '../../src/components/CoachMark';
 import { EmptyState } from '../../src/components/EmptyState';
+import { FirstLaunchGuide } from '../../src/components/FirstLaunchGuide';
+import { RandomPickModal } from '../../src/components/RandomPickModal';
 import { ScoreBottomSheet } from '../../src/components/ScoreBottomSheet';
 import { SetlistModal } from '../../src/components/SetlistModal';
 import { SongCard } from '../../src/components/SongCard';
 import { colors } from '../../src/constants/colors';
 import { fonts } from '../../src/constants/fonts';
-import { deleteSong, getAllSongs } from '../../src/db/songs';
+import { deleteSong, getAllSongs, getRandomSongId } from '../../src/db/songs';
 import { getSessionSummary, getMonthlyStats, SessionSummary, MonthlyStats } from '../../src/db/scores';
-import { getSetlistSongIds, saveSetlistSongIds } from '../../src/db/settings';
+import { getSetlistSongIds, saveSetlistSongIds, getSettingSync, setSettingSync } from '../../src/db/settings';
 import { useSongs, ALL_TAB, SETLIST_TAB } from '../../src/hooks/useSongs';
 import { useTabs } from '../../src/hooks/useTabs';
 import { SongWithStats } from '../../src/types';
 
 type SortKey = 'created_at' | 'best_score' | 'score_count' | 'latest_scored_at' | 'improvement';
+
+import { truncateTabName } from '../../src/constants/tabConfig';
 
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: 'created_at',      label: '登録日（新しい順）' },
@@ -82,6 +87,9 @@ export default function HomeScreen() {
   const [allSongsForSetlist, setAllSongsForSetlist] = useState<SongWithStats[]>([]);
   const [sessionSummary, setSessionSummary] = useState<SessionSummary | null>(null);
   const [monthlyStats, setMonthlyStats] = useState<MonthlyStats | null>(null);
+  const [firstLaunchGuideVisible, setFirstLaunchGuideVisible] = useState(false);
+  const [coachMarkVisible, setCoachMarkVisible] = useState(false);
+  const [randomModalVisible, setRandomModalVisible] = useState(false);
 
   const { songs, loading, error, reload } = useSongs(activeTabId);
 
@@ -118,8 +126,51 @@ export default function HomeScreen() {
       reloadTabs();
       reload();
       reloadExtras();
+      // Onb-1/2: 初回ガイドとコーチマークは排他制御（同時表示しない）
+      if (Platform.OS !== 'web') {
+        const flag = getSettingSync('first_launch_guide');
+        if (flag === 'pending') {
+          setFirstLaunchGuideVisible(true);
+        } else {
+          // Onb-2: ガイドが出ないときのみコーチマークを確認
+          const coachShown = getSettingSync('coach_mark_shown');
+          if (coachShown !== 'true') setCoachMarkVisible(true);
+        }
+      }
     }, [reloadTabs, reload])
   );
+
+  function handleFirstLaunchRegister() {
+    setSettingSync('first_launch_guide', 'done');
+    // 「今すぐ登録」を選んだユーザーはコーチマーク不要（ガイドで十分）
+    setSettingSync('coach_mark_shown', 'true');
+    setFirstLaunchGuideVisible(false);
+    router.push('/song/new');
+  }
+
+  function handleFirstLaunchLater() {
+    setSettingSync('first_launch_guide', 'done');
+    setFirstLaunchGuideVisible(false);
+    // 「あとで」の場合のみコーチマークを表示
+    const coachShown = getSettingSync('coach_mark_shown');
+    if (coachShown !== 'true') setCoachMarkVisible(true);
+  }
+
+  function handleCoachMarkDismiss() {
+    setSettingSync('coach_mark_shown', 'true');
+    setCoachMarkVisible(false);
+  }
+
+  function handleRandomPick(scopeId: number) {
+    setRandomModalVisible(false);
+    if (Platform.OS === 'web') return;
+    // ALL_TAB（すべて）は全曲から、それ以外はそのタブから抽選
+    const tabId = scopeId === ALL_TAB.id ? null : scopeId;
+    const songId = getRandomSongId(tabId);
+    if (songId != null) {
+      router.push(`/song/${songId}`);
+    }
+  }
 
   function openSetlistModal() {
     if (Platform.OS !== 'web') {
@@ -190,6 +241,8 @@ export default function HomeScreen() {
   }, [tabsWithAll, setlistIds]);
 
   const currentSortLabel = SORT_OPTIONS.find((o) => o.key === sortKey)?.label ?? '';
+  // 登録曲が1件もないときはランダム選曲ボタンを出さない
+  const hasAnySong = (tabsWithAll.find((t) => t.id === ALL_TAB.id)?.song_count ?? 0) > 0;
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
@@ -246,6 +299,9 @@ export default function HomeScreen() {
         </View>
       )}
 
+      {/* Onb-2: コアループのコーチマーク（初回のみ） */}
+      <CoachMark visible={coachMarkVisible} onDismiss={handleCoachMarkDismiss} />
+
       {/* 月次統計バー */}
       {monthlyStats && (
         <View style={styles.monthlyBar}>
@@ -282,7 +338,7 @@ export default function HomeScreen() {
                 isActive && styles.tabPillTextActive,
                 isSetlist && styles.tabPillTextSetlist,
               ]}>
-                {isSetlist ? '📋 ' : ''}{tab.name}
+                {isSetlist ? '📋 ' : ''}{truncateTabName(tab.name)}
               </Text>
               <View style={[styles.tabBadge, isActive && styles.tabBadgeActive, isSetlist && styles.tabBadgeSetlist]}>
                 <Text style={[styles.tabBadgeText, isActive && styles.tabBadgeTextActive]}>
@@ -306,6 +362,15 @@ export default function HomeScreen() {
             onChangeText={setQuery}
           />
         </View>
+        {hasAnySong && (
+          <TouchableOpacity
+            style={styles.diceBtn}
+            onPress={() => setRandomModalVisible(true)}
+            accessibilityLabel="ランダムに選曲"
+          >
+            <Text style={styles.diceBtnText}>🎲</Text>
+          </TouchableOpacity>
+        )}
         <TouchableOpacity
           style={[styles.sortBtn, sortKey !== 'created_at' && styles.sortBtnActive]}
           onPress={() => setSortModalVisible(true)}
@@ -342,7 +407,8 @@ export default function HomeScreen() {
         <FlatList
           data={filtered}
           keyExtractor={(item) => String(item.id)}
-          contentContainerStyle={styles.list}
+          style={styles.list}
+          contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => (
             <Swipeable
@@ -434,6 +500,22 @@ export default function HomeScreen() {
         selectedIds={setlistIds}
         onSave={handleSaveSetlist}
         onClose={() => setSetlistModalVisible(false)}
+      />
+
+      {/* Onb-1: 初回起動ガイド */}
+      <FirstLaunchGuide
+        visible={firstLaunchGuideVisible}
+        onRegister={handleFirstLaunchRegister}
+        onLater={handleFirstLaunchLater}
+        onRequestClose={handleFirstLaunchLater}
+      />
+
+      {/* ランダム選曲モーダル */}
+      <RandomPickModal
+        visible={randomModalVisible}
+        scopes={tabsWithAll}
+        onPick={handleRandomPick}
+        onClose={() => setRandomModalVisible(false)}
       />
     </View>
   );
@@ -544,12 +626,14 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   monthlyText: { fontSize: 11, color: colors.text2 },
-  tabScroll: { flexGrow: 0 },
+  // flexShrink:0 が必須。これが無いと、曲が増えて FlatList が縦に伸びたとき
+  // flex shrink でタブ行が圧縮され、pill の下端から切れていく（曲数に比例して悪化）。
+  // flexGrow:0 で縦に伸びず、固定 height は与えない（固定すると hard clip 枠になる）。
+  tabScroll: { flexGrow: 0, flexShrink: 0, marginBottom: 10 },
   tabScrollContent: {
     paddingHorizontal: 18,
-    paddingBottom: 10,
+    paddingVertical: 4,
     gap: 6,
-    alignItems: 'center',
   },
   tabPill: {
     flexDirection: 'row',
@@ -574,7 +658,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 185, 107, 0.15)',
     borderColor: 'rgba(0, 185, 107, 0.4)',
   },
-  tabPillText: { fontSize: 11, fontWeight: '500', color: colors.text2 },
+  tabPillText: { fontSize: 11, fontWeight: '500', color: colors.text2, lineHeight: 16, includeFontPadding: false },
   tabPillTextActive: { color: colors.accent },
   tabPillTextSetlist: { color: colors.green },
   tabBadge: {
@@ -607,6 +691,17 @@ const styles = StyleSheet.create({
   },
   searchIcon: { fontSize: 12 },
   searchInput: { flex: 1, fontSize: 12, color: colors.text },
+  diceBtn: {
+    width: 36,
+    height: 36,
+    backgroundColor: colors.surface,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  diceBtnText: { fontSize: 16 },
   sortBtn: {
     width: 36,
     height: 36,
@@ -630,7 +725,10 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     fontWeight: '500',
   },
-  list: { paddingHorizontal: 18, paddingBottom: 100, gap: 7 },
+  // flex:1 で残り領域いっぱいに広がり内部スクロールする。これが無いと
+  // FlatList が中身の高さで膨らみ、兄弟（タブ行）を flex shrink で圧迫して切る。
+  list: { flex: 1 },
+  listContent: { paddingHorizontal: 18, paddingBottom: 100, gap: 7 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
   swipeActions: { flexDirection: 'row', alignItems: 'stretch', paddingLeft: 8, gap: 6 },
   swipeBtn: {

@@ -28,8 +28,8 @@ export default function MachineSelectScreen() {
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.backBtn}>‹</Text>
+        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+          <Text style={styles.backBtnText}>‹</Text>
         </TouchableOpacity>
         <View>
           <Text style={styles.title}>デフォルト機種</Text>
@@ -93,9 +93,20 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   backBtn: {
+    width: 36,
+    height: 36,
+    backgroundColor: colors.surface2,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  backBtnText: {
     fontSize: 22,
     color: colors.accent,
     fontWeight: '600',
+    lineHeight: 26,
   },
   title: {
     fontFamily: fonts.jakartaBold,

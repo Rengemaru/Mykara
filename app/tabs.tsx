@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../src/constants/colors';
+import { MAX_TAB_NAME_LENGTH } from '../src/constants/tabConfig';
 import { insertTab, updateTab, deleteTab, updateTabOrder } from '../src/db/tabs';
 import { useTabs } from '../src/hooks/useTabs';
 import { EmptyState } from '../src/components/EmptyState';
@@ -103,8 +104,8 @@ export default function TabsScreen() {
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       {/* ヘッダー */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.backBtn}>‹</Text>
+        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+          <Text style={styles.backBtnText}>‹</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>タブを編集</Text>
       </View>
@@ -131,7 +132,7 @@ export default function TabsScreen() {
                 <View style={styles.tabIcon}>
                   <Text style={styles.tabIconText}>🗂</Text>
                 </View>
-                <Text style={styles.tabName} numberOfLines={1}>{tab.name}</Text>
+                <Text style={styles.tabName} numberOfLines={1} ellipsizeMode="tail">{tab.name}</Text>
                 <View style={styles.actions}>
                   <TouchableOpacity
                     style={[styles.arrowBtn, index === 0 && styles.arrowBtnDisabled]}
@@ -179,15 +180,25 @@ export default function TabsScreen() {
             {modalMode === 'add' ? '新しいタブを作成' : 'タブ名を変更'}
           </Text>
           <TextInput
-            style={styles.modalInput}
+            style={[
+              styles.modalInput,
+              inputName.length > MAX_TAB_NAME_LENGTH && styles.modalInputError,
+            ]}
             value={inputName}
             onChangeText={setInputName}
             placeholder="タブ名を入力"
             placeholderTextColor={colors.text3}
             autoFocus
             returnKeyType="done"
+            maxLength={MAX_TAB_NAME_LENGTH}
             onSubmitEditing={handleConfirm}
           />
+          <Text style={[
+            styles.charCount,
+            inputName.length >= MAX_TAB_NAME_LENGTH * 0.9 && styles.charCountWarn,
+          ]}>
+            {inputName.length}/{MAX_TAB_NAME_LENGTH}
+          </Text>
           <View style={styles.modalActions}>
             <TouchableOpacity style={styles.modalCancel} onPress={closeModal}>
               <Text style={styles.modalCancelText}>キャンセル</Text>
@@ -218,9 +229,20 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   backBtn: {
+    width: 36,
+    height: 36,
+    backgroundColor: colors.surface2,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  backBtnText: {
     fontSize: 22,
     color: colors.accent,
     fontWeight: '600',
+    lineHeight: 26,
   },
   headerTitle: {
     fontSize: 16,
@@ -370,6 +392,18 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     fontSize: 13,
     color: colors.text,
+  },
+  modalInputError: {
+    borderColor: colors.red,
+  },
+  charCount: {
+    fontSize: 10,
+    color: colors.text3,
+    textAlign: 'right',
+    marginTop: -8,
+  },
+  charCountWarn: {
+    color: colors.red,
   },
   modalActions: {
     flexDirection: 'row',

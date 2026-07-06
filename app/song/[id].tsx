@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   Alert,
   FlatList,
@@ -16,13 +16,13 @@ import { Swipeable } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../src/constants/colors';
 import { fonts } from '../../src/constants/fonts';
-import { deleteScore, getKeyScoreStats, KeyScoreStat } from '../../src/db/scores';
+import { deleteScore } from '../../src/db/scores';
+import { formatDateTime } from '../../src/lib/datetime';
 import { useSongDetail } from '../../src/hooks/useSongDetail';
 import { ScoreRow } from '../../src/types';
 import { ScoreBottomSheet } from '../../src/components/ScoreBottomSheet';
 import { ScoreChart } from '../../src/components/ScoreChart';
 import { EmptyState } from '../../src/components/EmptyState';
-import { BarChart } from 'react-native-gifted-charts';
 
 export default function SongDetailScreen() {
   const insets = useSafeAreaInsets();
@@ -32,21 +32,11 @@ export default function SongDetailScreen() {
   const [sheetVisible, setSheetVisible] = useState(false);
   const [editingScore, setEditingScore] = useState<ScoreRow | null>(null);
   const [artworkError, setArtworkError] = useState(false);
-  const [keyStats, setKeyStats] = useState<KeyScoreStat[]>([]);
-
-  useEffect(() => {
-    if (Platform.OS === 'web') return;
-    try {
-      setKeyStats(getKeyScoreStats());
-    } catch (e) {
-      console.error(e);
-    }
-  }, [scores]);
 
   function handleDeleteScore(score: ScoreRow) {
     Alert.alert(
       'スコアを削除',
-      `${score.scored_at}  ${score.score.toFixed(1)}点\nこの記録を削除しますか？`,
+      `${formatDateTime(score.scored_at)}  ${score.score.toFixed(1)}点\nこの記録を削除しますか？`,
       [
         { text: 'キャンセル', style: 'cancel' },
         {
@@ -183,41 +173,6 @@ export default function SongDetailScreen() {
               </View>
             )}
 
-            {/* キー×スコア相関チャート（2種類以上のキーに記録がある場合） */}
-            {keyStats.length >= 2 && (
-              <View style={styles.keyChartSection}>
-                <Text style={styles.sectionLabel}>キー別平均スコア（全曲）</Text>
-                <Text style={styles.keyChartSub}>
-                  {song.key_offset != null
-                    ? `この曲のキー設定: ${song.key_offset >= 0 ? `+${song.key_offset}` : song.key_offset} を強調表示`
-                    : 'この曲はキー未設定'}
-                </Text>
-                <View style={styles.keyChartWrap}>
-                  <BarChart
-                    data={keyStats.map((s) => ({
-                      value: s.avg_score,
-                      label: s.key_offset >= 0 ? `+${s.key_offset}` : String(s.key_offset),
-                      frontColor: s.key_offset === song.key_offset ? colors.accent : colors.surface2,
-                      topLabelComponent: s.key_offset === song.key_offset
-                        ? () => <Text style={styles.keyBarTopLabel}>{s.avg_score.toFixed(0)}</Text>
-                        : undefined,
-                    }))}
-                    barWidth={28}
-                    height={80}
-                    noOfSections={3}
-                    hideYAxisText
-                    rulesColor={colors.border}
-                    xAxisColor={colors.border}
-                    yAxisColor="transparent"
-                    xAxisLabelTextStyle={styles.xLabel}
-                    initialSpacing={12}
-                    endSpacing={12}
-                    barBorderRadius={4}
-                  />
-                </View>
-              </View>
-            )}
-
             {/* メモ */}
             {song.memo ? (
               <View style={styles.memoCard}>
@@ -309,7 +264,7 @@ function HistoryRow({ score, onEdit, onDelete }: HistoryRowProps) {
       )}
     >
       <View style={styles.historyRow}>
-        <Text style={styles.historyDate}>{score.scored_at}</Text>
+        <Text style={styles.historyDate}>{formatDateTime(score.scored_at)}</Text>
         <View style={[
           styles.machineBadge,
           score.machine === 'DAM' ? styles.machineBadgeDam : styles.machineBadgeJoy,
@@ -492,11 +447,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
     fontWeight: '500',
   },
-  keyChartSection: { gap: 4 },
-  keyChartSub: { fontSize: 9, color: colors.text3 },
-  keyChartWrap: { marginLeft: -14, marginTop: 4 },
-  keyBarTopLabel: { fontSize: 8, color: colors.accent, fontWeight: '700' },
-  xLabel: { fontSize: 9, color: colors.text3 },
   memoCard: {
     backgroundColor: colors.surface,
     borderWidth: 1.5,
