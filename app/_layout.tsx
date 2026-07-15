@@ -31,7 +31,7 @@ export default function RootLayout() {
     if (Platform.OS === 'web') return;
     (async () => {
       await initDatabase();
-      seedIfEmpty();
+      if (__DEV__) seedIfEmpty();
       setDbReady(true);
     })();
   }, []);
